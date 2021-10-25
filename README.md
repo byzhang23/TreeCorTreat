@@ -15,7 +15,6 @@ TreeCorTreat takes a gene expression matrix (raw count), cell-level metadata and
 
 The modular structure provides users with the flexibility to skip certain analysis steps and replace them by users’ own data or analysis functions. 
 
-
 ## TreeCorTreat Installation
 
 TreeCorTreat software can be installed via Github. Users should have R installed on their computer before installing TreeCorTreat. R version needs to be at least 3.6.1 or higher. R can be downloaded here: http://www.r-project.org/.
