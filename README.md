@@ -45,7 +45,8 @@ devtools::install_github("byzhang23/TreeCorTreat")
 
 ## Citation
 Please cite the following paper:
-Boyang Zhang, Zhicheng Ji and Hongkai Ji. Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [add bioRxiv link]
+
+Boyang Zhang, Zhicheng Ji and Hongkai Ji. Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [bioRxiv link]
 
 ## Contact the Author
 Author: Boyang Zhang, Hongkai Ji
