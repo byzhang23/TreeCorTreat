@@ -1,0 +1,46 @@
+---
+output: html_document
+---
+
+TreeCorTreat: Tree-based correlation screen for phenotype-associated transcriptomic features and cell types
+====
+
+## Overview
+Single-cell RNA-seq experiments with multiple samples are increasingly used to discover cell types and their molecular features that may influence samples’ phenotype (e.g. disease). However, analyzing and visualizing the complex cell type-phenotype association remains nontrivial. TreeCorTreat is an open source R package that tackles this problem by using a tree-based correlation screen to analyze and visualize the association between phenotype and transcriptomic features and cell types at multiple cell type resolution levels. With TreeCorTreat, one can conveniently explore and compare different feature types, phenotypic traits, analysis protocols and datasets, and evaluate the impacts of potential confounders. 
+
+## TreeCorTreat Installation
+
+TreeCorTreat software can be installed via Github. Users should have R installed on their computer before installing TreeCorTreat. R version needs to be at least 3.6.1 or higher. R can be downloaded here: http://www.r-project.org/.
+
+Users shall also install the following R packages before installing TreeCorTreat:
+
+* [Seurat v3](https://satijalab.org/seurat/index.html)
+* [harmony](https://github.com/immunogenomics/harmony)
+
+
+<span style="color:red;">TreeCorTreat package is developed based on Seurat v3 (e.g. v3.2.2)</span>, because there are some reported issues remained to be resolved in the latest Seurat v4 release. In order to implement TreeCorTreat successfully, please make sure to install Seurat v3 release with the following command:
+
+```{r}
+remotes::install_version("Seurat", version = "3.X.X") # version = '3.2.2'
+```
+
+To install harmony from CRAN:
+```{r}
+install.packages("harmony")
+```
+
+To install the latest version of TreeCorTreat package via Github, run following commands in R:
+```{r}
+if (!require("devtools"))
+  install.packages("devtools")
+devtools::install_github("byzhang23/TreeCorTreat")
+```
+
+## Citation
+Please cite the following paper:
+Boyang Zhang, Zhicheng Ji and Hongkai Ji. Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [add bioRxiv link]
+
+## Contact the Author
+Author: Boyang Zhang, Hongkai Ji
+
+If you enounter any bugs or have any suggestions, please feel free to contact Boyang Zhang bzhang34@jhu.edu, or open a new issue on the Github page: https://github.com/byzhang23/TreeCorTreat/issues.
