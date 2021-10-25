@@ -1,7 +1,3 @@
----
-output: html_document
----
-
 TreeCorTreat: Tree-based correlation screen for phenotype-associated transcriptomic features and cell types
 ====
 
