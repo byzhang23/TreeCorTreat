@@ -25,7 +25,7 @@ Users shall also install the following R packages before installing TreeCorTreat
 * [harmony](https://github.com/immunogenomics/harmony)
 
 
-<span style="color:red;">TreeCorTreat package is developed based on Seurat v3 (e.g. v3.2.2)</span>, because there are some reported issues remained to be resolved in the latest Seurat v4 release. In order to implement TreeCorTreat successfully, please make sure to install Seurat v3 release with the following command:
+<p style="color:red;">TreeCorTreat package is developed based on Seurat v3 (e.g. v3.2.2)</p>, because there are some reported issues remained to be resolved in the latest Seurat v4 release. In order to implement TreeCorTreat successfully, please make sure to install Seurat v3 release with the following command:
 
 ```{r}
 remotes::install_version("Seurat", version = "3.X.X") # version = '3.2.2'
