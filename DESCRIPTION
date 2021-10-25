@@ -1,0 +1,14 @@
+Package: TreeCorTreat
+Type: Package
+Title: Tree-based correlation screen for phenotype-associated transcriptomic features and cell types
+Version: 0.99.0
+Date: 2021-10-25
+Author: Boyang Zhang, Hongkai Ji
+Maintainer: Boyang Zhang <bzhang34@jhu.edu>
+Description: TreeCorTreat is a software tool that supports multi-resolution and multi-feature type association analysis in single-cell data. We also introduce TreeCorTreat plot as a new visualization tool to summarize the association information in such data.
+Depends: R (>= 3.6.1)
+RoxygenNote: 7.1.1
+VignetteBuilder: knitr
+Encoding: UTF-8
+License: GPL-2
+
