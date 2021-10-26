@@ -11,4 +11,23 @@ RoxygenNote: 7.1.1
 VignetteBuilder: knitr
 Encoding: UTF-8
 License: GPL-2
-
+Imports: 
+    Seurat,
+    RColorBrewer,
+    dplyr,
+    ggplot2,
+    ggraph,
+    harmony,
+    limma,
+    parallel,
+    pheatmap,
+    MASS,
+    Matrix,
+    ape,
+    combinat,
+    ggrepel,
+    grDevices,
+    igraph,
+    lmtest,
+    patchwork,
+    tidyr
