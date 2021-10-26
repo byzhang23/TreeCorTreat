@@ -17,7 +17,6 @@
 #' @return A list of two elements: the first element is a table of summary statistic for each tree node and second element is a list of PC matrices for each tree node.
 #' @export
 #' @import dplyr
-#' @importFrom compositions clr
 #' @importFrom lmtest lrtest
 #' @author Boyang Zhang <bzhang34@jhu.edu>, Hongkai Ji
 
