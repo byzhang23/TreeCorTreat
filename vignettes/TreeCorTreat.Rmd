@@ -334,7 +334,7 @@ treecortreatplot(hierarchy_structure,
 ```
 We can then use `treecor_degheatmap` to look at gene expression pattern for top n DEGs:
 
-```{r,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+```{r,warning = F, message = F,out.width='\\textwidth', fig.height = 6, fig.align='center'}
 # heatmap for top 10 DEGs with positive log fold change (enriched in Severe)
 treecor_degheatmap(sample_meta,
                    pseudobulk = res_deg$pseudobulk.ls[['T']],
