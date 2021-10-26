@@ -16,7 +16,7 @@ maintainer:
       - "bzhang34@jhu.edu"
       
 package: TreeCorTreat
-output: rmarkdown::html_vignette
+output: BiocStyle::html_document
 vignette: >
   %\VignetteIndexEntry{TreeCorTreat}
   %\VignetteEngine{knitr::rmarkdown}
