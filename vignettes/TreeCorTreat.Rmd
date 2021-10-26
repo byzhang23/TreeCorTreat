@@ -84,7 +84,7 @@ integrated_data <- access_data_seurat(seurat_obj = integration,output_dir = getw
 
 In our example, no cell has been filtered out and we have stored updated cell-level metadata (with additional columns including 'celltype' and UMAP coordinates) as **integrated_cellmeta**.
 
-```{r}
+```{r, warning=F,message=F}
 data(integrated_cellmeta)
 head(integrated_cellmeta)
 
