@@ -1,20 +1,9 @@
 ---
 title: "TreeCorTreat: Tree-based correlation screen for phenotype-associated transcriptomic features and cell types"
-author: 
-  - name: Boyang Zhang
-    affiliation: 
-      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
-  - name: Zhicheng Ji
-    affiliation: 
-      - &id2 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
-  - name: Hongkai Ji
-    affiliation: 
-      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
-maintainer:
-  - name: Boyang Zhang
-    email: 
-      - "bzhang34@jhu.edu"
-      
+author:
+- Boyang Zhang
+- Zhicheng Ji
+- Hongkai Ji
 package: TreeCorTreat
 output: pdf_document
 vignette: >
