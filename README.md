@@ -44,14 +44,13 @@ devtools::install_github("byzhang23/TreeCorTreat")
 ```
 ## User Manual
 
-Please check: https://github.com/byzhang23/TreeCorTreat/blob/master/vignettes/TreeCorTreat.Rmd.
+Please check: https://github.com/byzhang23/TreeCorTreat/tree/master/vignettes.
 
 ## Citation
 Please cite the following paper:
 
 Boyang Zhang, Zhicheng Ji and Hongkai Ji. Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [bioRxiv link]
 
-## Contact the Author
-Author: Boyang Zhang, Hongkai Ji
+## Contact
 
-If you enounter any bugs or have any suggestions, please feel free to contact Boyang Zhang bzhang34@jhu.edu, or open a new issue on the Github page: https://github.com/byzhang23/TreeCorTreat/issues.
+If you encounter any bugs or have any suggestions, please feel free to contact Boyang Zhang bzhang34@jhu.edu, or open an issue on the Github page: https://github.com/byzhang23/TreeCorTreat/issues.
