@@ -32,3 +32,5 @@ Imports:
     lmtest,
     patchwork,
     tidyr
+Suggests: 
+    knitr
