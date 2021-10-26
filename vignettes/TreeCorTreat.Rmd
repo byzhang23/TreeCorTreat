@@ -1,0 +1,42 @@
+---
+title: "TreeCorTreat: Tree-based correlation screen for phenotype-associated transcriptomic features and cell types"
+author: 
+  - name: Boyang Zhang
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+  - name: Zhicheng Ji
+    affiliation: 
+      - &id2 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+  - name: Hongkai Ji
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+maintainer:
+  - name: Boyang Zhang
+    email: 
+      - "bzhang34@jhu.edu"
+      
+package: TreeCorTreat
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{TreeCorTreat}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Overview
+
+Single-cell RNA-seq experiments with multiple samples are increasingly used to discover cell types and their molecular features that may influence samples’ phenotype (e.g. disease). However, analyzing and visualizing the complex cell type-phenotype association remains nontrivial. TreeCorTreat is an open source R package that tackles this problem by using a tree-based correlation screen to analyze and visualize the association between phenotype and transcriptomic features and cell types at multiple cell type resolution levels. With TreeCorTreat, one can conveniently explore and compare different feature types, phenotypic traits, analysis protocols and datasets, and evaluate the impacts of potential confounders. 
+
+TreeCorTreat takes a gene expression matrix (raw count), cell-level metadata and sample-level metadata as input. It provides a whole pipeline to integrate data across samples, identify cell clusters and their hierarchical structure, evaluate the association between sample phenotype and cell type at different resolution levels in terms of both cell type proportion and gene expression, and summarize and visualize the results in a tree structured TreeCorTreat plot. This pipeline consists of six functional modules: 
+
+* Module 1: Data integration
+* Module 2: Define cell types at multiple resolutions 
+* Module 3: Identify association between cell type proportion and sample phenotype
+* Module 4: Identify association between global gene expression and sample phenotype
+* Module 5: Identify differentially expressed genes
+* Module 6: Visualization via TreeCorTreat plot
+
+The modular structure provides users with the flexibility to skip certain analysis steps and replace them by users’ own data or analysis functions. 
+
+For more details, please check our paper descrbing the **TreeCorTreat** package:
+- Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [bioRxiv link]
