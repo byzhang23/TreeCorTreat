@@ -332,7 +332,6 @@ treecortreatplot(hierarchy_structure,
                  nonleaf_label_pos = 0.4,
                  nonleaf_point_gap = 0.2)
 ```
-
 We can then use `treecor_degheatmap` to look at gene expression pattern for top n DEGs:
 
 ```{r,out.width='\\textwidth', fig.height = 6, fig.align='center'}

@@ -44,6 +44,7 @@ devtools::install_github("byzhang23/TreeCorTreat")
 ```
 ## User Manual
 
+Please check: https://github.com/byzhang23/TreeCorTreat/blob/master/vignettes/TreeCorTreat.Rmd.
 
 ## Citation
 Please cite the following paper:
