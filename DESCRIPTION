@@ -13,7 +13,7 @@ Encoding: UTF-8
 License: GPL-2
 LazyData: true
 Imports: 
-    Seurat,
+    Seurat (<=3.2.3),
     RColorBrewer,
     dplyr,
     ggplot2,
