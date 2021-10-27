@@ -1,7 +1,7 @@
 Package: TreeCorTreat
 Type: Package
 Title: Tree-based correlation screen for phenotype-associated transcriptomic features and cell types
-Version: 0.99.0
+Version: 0.9.0
 Date: 2021-10-25
 Author: Boyang Zhang, Hongkai Ji
 Maintainer: Boyang Zhang <bzhang34@jhu.edu>
