@@ -42,9 +42,11 @@ if (!require("devtools"))
   install.packages("devtools")
 devtools::install_github("byzhang23/TreeCorTreat")
 ```
-## User Manual
+## Tutorial
 
-Please check: https://github.com/byzhang23/TreeCorTreat/tree/master/vignettes.
+For the step-by-step tutorial, please refer to:
+https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html 
+
 
 ## Citation
 Please cite the following paper:
