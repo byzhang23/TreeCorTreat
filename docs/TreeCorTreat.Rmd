@@ -1,0 +1,833 @@
+---
+title: "TreeCorTreat: Tree-based correlation screen for phenotype-associated transcriptomic features and cell types"
+author: 
+  - name: Boyang Zhang
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+  - name: Zhicheng Ji
+    affiliation: 
+      - &id2 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+  - name: Hongkai Ji
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+maintainer:
+  - name: Boyang Zhang
+    email: 
+      - "bzhang34@jhu.edu"
+      
+package: TreeCorTreat
+output: BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{TreeCorTreat}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Overview
+
+Single-cell RNA-seq experiments with multiple samples are increasingly used to discover cell types and their molecular features that may influence samples’ phenotype (e.g. disease). However, analyzing and visualizing the complex cell type-phenotype association remains nontrivial. TreeCorTreat is an open source R package that tackles this problem by using a tree-based correlation screen to analyze and visualize the association between phenotype and transcriptomic features and cell types at multiple cell type resolution levels. With TreeCorTreat, one can conveniently explore and compare different feature types, phenotypic traits, analysis protocols and datasets, and evaluate the impacts of potential confounders. 
+
+TreeCorTreat takes a gene expression matrix (raw count), cell-level metadata and sample-level metadata as input. It provides a whole pipeline to integrate data across samples, identify cell clusters and their hierarchical structure, evaluate the association between sample phenotype and cell type at different resolution levels in terms of both cell type proportion and gene expression, and summarize and visualize the results in a tree structured TreeCorTreat plot. This pipeline consists of six functional modules: 
+
+* Module 1: Data integration
+* Module 2: Define cell types at multiple resolutions 
+* Module 3: Identify association between cell type proportion and sample phenotype
+* Module 4: Identify association between global gene expression and sample phenotype
+* Module 5: Identify differentially expressed genes
+* Module 6: Visualization via TreeCorTreat plot
+
+The modular structure provides users with the flexibility to skip certain analysis steps and replace them by users’ own data or analysis functions. 
+
+For more details, please check our paper descrbing the **TreeCorTreat** package:
+- Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [bioRxiv link]
+
+# Input data and data preparation
+
+The input for TreeCorTreat consists of three components: a gene expression matrix E (G$\times$C, with rows representing G genes and columns representing C cells), cell-level metadata M (C$\times$K, where K $\geq$ 2) and sample-level metadata L (S$\times$J, where J $\geq$ 2). To avoid redundancy and save storage space, we split metadata into cell-level and sample-level metadata. Cell-level metadata primarily annotates cell-level information and must contain at least 2 columns for each cell: cell barcode and corresponding sample identifier (ID). An optional third column can be added to provide cell-type annotation. Cell barcode is used to couple cell-level metadata M and gene expression matrix E. Sample-level metadata documents a sample’s phenotype(s) of interests (e.g. clinical outcome) and other related covariates (e.g. age and sex). The first column contains unique sample IDs, and the remaining columns contain phenotypes and covariates. The cell-level metadata and sample-level metadata can be linked via unique sample IDs. 
+
+Here, we include 8 single-cell RNA-seq PBMC samples downloaded from **ArrayExpress: E-MTAB-9357** as an example to illustrate TreeCorTreat pipeline.
+
+```{r}
+# load in TreeCorTreat
+options(warn=-1)
+suppressMessages(library(TreeCorTreat))
+suppressMessages(library(ggplot2))
+suppressMessages(library(dplyr))
+suppressMessages(library(tidyr))
+
+data(raw_data)
+str(raw_data)
+```
+
+**raw_data** is a list that contains three elements: sample-level metadata, cell-level metadata and gene expression matrix (raw count). There are `r nrow(raw_data[['sample_meta']])` samples (4 healthy donors (HD) and 4 Severe (Se) COVID-19 samples), `r nrow(raw_data[['cell_meta']])` cells and `r nrow(raw_data[['count']])` genes. 
+
+# Module 1: Data integration
+
+Harmony algorithm is applied to integrate cells from different samples and embed them into a common low-dimensional space. We adapt the `RunHarmony` and `BuildClusterTree` functions from **Seurat v3** and wrap the following steps into a standalone **`treecor_harmony`** function with tunable parameters: library size normalization, integration feature selection, Principal Component Analysis (PCA), Harmony integration, unsupervised louvain clustering, Uniform Manifold Approximation and Projection (UMAP), hierarchical clustering of louvain clusters, and differentially expression analysis to identify cell type marker genes to facilitate annotation. 
+
+Specifically, for library size normalization, gene counts for a given cell are divided by total counts for that cell, multiplied by a scaling factor ($10^4$) and applied a natural log transformation. Features for integrating samples are obtained by choosing highly variable genes (HVGs) based on variance-mean relationship within each individual sample (using `SelectIntegrationFeatures` function) and ranking the features based on the number of samples where they are identified as HVGs. By default, top 2000 HVGs are chosen and fed into downstream PCA procedure. Harmony is carried out based on the top 20 PCs and the corrected harmony embedding is obtained. Top 20 harmony coordinates are then used for downstream louvain clustering and UMAP analyses (using `FindClusters` and `RunUMAP` functions in Seurat). 
+
+```{r, eval=F}
+# integration
+set.seed(12345)
+integration <- treecor_harmony(count = raw_data[['count']], sample_meta = raw_data[['sample_meta']], output_dir = getwd())
+```
+
+This step is the most time-consuming and RAM intensive module in our evaluation. It may take up to days to run using a large dataset (>$10^5$ cells). Instead of using this default integration pipeline, users can also use their own integration results in a Seurat object or provide cell cluster labels in an additional **'celltype'** column in the cell-level metadata and skip the integration step. 
+
+The integrated Seurat object will be stored in local directory and filtered gene expression matrix or cell-level metadata can be extracted by `access_data_seurat`, which will be used for downstream analyses.
+
+```{r, eval = F}
+# list integration result and data extracted from Seurat object
+integrated_data <- access_data_seurat(seurat_obj = integration,output_dir = getwd())
+```
+
+In our example, no cell has been filtered out and we have stored updated cell-level metadata (with additional columns including 'celltype' and UMAP coordinates) as **integrated_cellmeta**.
+
+```{r, warning=F,message=F}
+data(integrated_cellmeta)
+head(integrated_cellmeta)
+
+# data for downstream analysis
+sample_meta <- raw_data[['sample_meta']]
+count <- raw_data[['count']]
+cell_meta <- integrated_cellmeta
+```
+
+# Module 2: Define cell types at multiple resolutions
+
+The previous steps defined cell clusters either by louvain clustering or based on user-provided cell-level metadata (i.e. the optional column 3 in the cell metadata). Users can add text labels to annotate the cell type of each cell cluster based on top differentially expressed genes or known cell type marker genes. Here, we overlay several gene markers (e.g. CD3D, CD19 and CD68) on UMAP to roughly annotate cell clusters.
+
+```{r,message=F,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+# cell clusters
+label_text <- integrated_cellmeta %>% group_by(celltype) %>% summarise(UMAP_1 = median(UMAP_1),UMAP_2 = median(UMAP_2))
+
+ggplot(integrated_cellmeta,aes(x=UMAP_1,y=UMAP_2,color = celltype)) + 
+  geom_point(size = 0.1) +
+  geom_text(data = label_text,aes(x=UMAP_1,y=UMAP_2,label = celltype),color = 'black',size = 5) +
+  theme_classic() +
+  guides(color = guide_legend(override.aes = list(size = 3))) 
+```
+
+```{r,message=F,out.width='\\textwidth', fig.height = 8, fig.align='center'}
+# gene markers
+genes <- c('CD3D','CD14','CD19','NCAM1','CD4','CD8A',
+           'FCGR3A','CD1C','CD68','CD79A','CSF3R',
+           'CD33','CCR7','CD38','CD27','KLRD1')
+
+rc <- Matrix::colSums(count)
+sub_count <- count[genes,] %>% as.matrix
+sub_norm <- log2(t(t(sub_count)/rc*1e6 + 1)) %>% as.matrix
+
+df_marker <- t(sub_norm) %>% data.frame %>% mutate(barcode = rownames(.)) %>% gather(gene,expr,-barcode) %>% inner_join(cell_meta %>% select(barcode,UMAP_1,UMAP_2))
+
+ggplot(df_marker,aes(x = UMAP_1,y = UMAP_2,col = expr)) +
+  geom_point(size = 0.01, shape = ".") +
+  scale_colour_viridis_c(option = 'C',direction = 1) +
+  facet_wrap(~ gene) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = 'bottom')
+```
+
+We roughly categorize `r length(unique(cell_meta$celltype))` cell clusters into 3 large cell-types based on gene markers: B cells (CD19), T cells (CD3D) and Monocytes (CD14). 
+
+```{r}
+# new celltype annotation
+new_label <- data.frame(old = sort(factor(unique(cell_meta$celltype,levels = 1:16)))) %>% 
+  mutate(large_celltype = ifelse(old %in% c(1,9,11,12,13,16),'Mono',
+                                 ifelse(old %in% c(2:6,8,10,14,15),'T','B')),
+         new = paste0(large_celltype,'_c',old)) %>% select(-large_celltype)
+new_label
+```
+## Modify cell type annotation (optional)
+
+Users can modify the cell type label via `modify_label` function to update cell type annotations in `cell_meta`:
+
+```{r}
+# modify cell type names in `cell_meta`
+cell_meta <- modify_label(new_label,hierarchy_list = NULL,cell_meta)$cell_meta
+head(cell_meta[,c('barcode','sample','celltype')])
+```
+
+## Construct hierarchical tree structure
+
+To facilitate association analyses at multiple resolutions, cell clusters are further clustered hierarchically. The tree can be derived using either a data-driven approach or a knowledge-based approach. 
+
+The tree can be either provided by users based on prior knowledge (knowledge-based) or derived from the data using hierarchical clustering (data-driven). For data-driven approach, a phylogenetic tree is built on PC space by applying `treecor_harmony` function (or `BuildClusterTree` from Seurat R package). 
+
+
+### Data-driven approach
+
+In the data-driven approach, the tree is generated by the hierarchical clustering of the louvain clusters by applying `treecor_harmony` function (or `BuildClusterTree` from Seurat R package). Specifically, PC scores are first averaged across cells within each cell cluster and a hierarchical tree is constructed. The data-driven approach could provide an unbiased way to infer underlying tree structure, but it can be challenging to annotate every intermediate tree nodes. 
+
+
+### Knowledge-based approach
+
+In the knowledge-based approach, users can specify the tree based on their prior knowledge by providing a string to describe the parent-children relationship of clusters at different granularity levels. The leaf nodes in the tree correspond to cell clusters obtained from either the louvain clustering in the integration step or the 'celltype' column from cell metadata.
+
+```{r,warning=FALSE,message=FALSE,out.width='\\textwidth', fig.height = 4, fig.align='center'}
+# specify string
+input_string <- '@All(@B(B_c7),@T(T_c15,T_c14,T_c10,T_c8,T_c6,T_c5,T_c4,T_c3,T_c2),@Monocyte(Mono_c16,Mono_c13,Mono_c12,Mono_c11,Mono_c9,Mono_c1))'
+
+# extract hierarchy from string
+hierarchy_structure <- extract_hrchy_string(input_string,special_character = '@', plot = T)
+```
+
+For demonstration purpose, we will use knowledge-based hierarchical structure in subsequent analysis.
+
+# Module 3: Identify association between cell type proportion and sample phenotype
+
+Analyses of cell type proportions are wrapped into a standalone function **`treecor_ctprop`**. Here we first define the feature for each tree node and then evaluate the association between the feature and the sample phenotype. For a leaf node cell cluster, the feature is defined as the proportion of cells in a sample that fall into that node. For an intermediate parent node or root node, users can choose to define the feature in one of **Aggregate** (default setting), **Concatenate leaf nodes** or **Concatenate immediate children**. Once the feature for each node is defined, we will go through each tree node to examine the correlation (or other summary statistic) between its feature and the sample phenotype. The way to compute the summary statistic depends on whether the phenotype is univariate or multivariate:
+
+* Univariate phenotype/Multivariate phenotype analyzed separately:
++ Pearson correlation (default) with correlation sign
++ Spearman correlation with correlation sign
++ Canonical correlation
++ Chi-squared statistic (via likelihood ratio test between a full model (with phenotype as explanatory variables) and a reduced model (intercept-only)) with coefficient sign
+* Multivariate phenotype analyzed jointly:
++ Canonical correlation
++ Chi-squared statistic (via likelihood ratio test)
+
+The permutation-based p-value can be obtained and adjusted p-value is computed using Benjamini & Yekutieli procedure. 
+
+We can first use a kernel density plot to visualize cell density stratified by disease severity.
+```{r,out.width='\\textwidth', fig.height = 5, fig.align='center'}
+# density plot on UMAP embeddings
+treecor_celldensityplot(cell_meta,
+                        sample_meta,
+                        row_variable = 'study',
+                        col_variable = 'severity',
+                        row_combined = F)
+```
+
+Next, we can assess the association between cell type proportion and disease severity using `treecor_ctprop()` pipeline:
+
+```{r,message=FALSE}
+# cell type prop pipeline (default)
+res_ctprop_full <- treecor_ctprop(hierarchy_structure,
+                                  cell_meta,
+                                  sample_meta,
+                                  response_variable = 'severity',
+                                  method = "aggregate",
+                                  analysis_type = "pearson",
+                                  num_permutations = 100)
+names(res_ctprop_full)
+```
+
+The first element is a table of computed summary statistic (e.g. pearson correlation) along with p-value and adjusted p-value. The second element is a list of PC matrices for each cell type. However, in default setting (aggregate), proportion is aggregated as a vector (1-dimension) and thus we do not conduct PCA.
+
+```{r}
+# extract Pearson correlation
+res_ctprop <- res_ctprop_full[[1]] %>% mutate(severity.absolute_cor = abs(severity.pearson))
+head(res_ctprop)
+colnames(res_ctprop)
+```
+
+Then we can use **TreeCorTreat plot** to visualize the result. Users can specify variables for different aesthetic (e.g. color, size, alpha). We will discuss TreeCorTreat plot in details later.
+```{r,warning=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+# visualize
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_ctprop,
+                 response_variable = 'severity',
+                 color_variable = 'direction',
+                 size_variable = 'absolute_cor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2)
+```
+
+# Module 4: Identify association between global gene expression and sample phenotype
+
+
+Analyses of global gene expression are wrapped into a standalone function **`treecor_expr`**. Here we also first define the feature for each tree node and then evaluate the global gene expression-sample phenotype association. For a leaf node, we first pool all cells in the node to obtain a pseudobulk profile of the node. We then use these pseudobulk profiles from all samples to select highly variable genes using locally weighted scatterplot smoothing (LOWESS) procedure in R. The pseudobulk profile of the selected highly variable genes in each sample is used as the feature vector of the node. This feature vector is multivariate. For non-leaf nodes, users can choose to define the feature in one of **Aggregate** (default setting), **Concatenate leaf nodes** or **Concatenate immediate children**. Once the feature for each node is defined, we will go through each tree node to examine the correlation (or other summary statistic) between its feature and the sample phenotype. Users can choose either canonical correlation or F-statistic (Pillai-Bartlett, comparing a full model (with phenotype as explanatory variables) with a reduced model (intercept-only)).
+
+```{r,message=FALSE}
+# gene expression pipeline
+res_expr_full <- treecor_expr(count,
+                              hierarchy_structure,
+                              cell_meta,
+                              sample_meta,
+                              response_variable = 'severity',
+                              method = 'aggregate',
+                              analysis_type = 'cancor',
+                              num_permutations = 100)
+names(res_expr_full)
+```
+
+The first element is a table of computed summary statistic (e.g. canonical correlation) along with p-value and adjusted p-value. The second element is a list of PC matrices for each cell type.
+
+```{r}
+# extract canonical correlation
+res_expr <- res_expr_full[[1]]
+head(res_expr)
+# extract PCA list
+pc_expr <- res_expr_full[[2]]
+names(pc_expr)
+# extract PCA matrix corresponding to 'T' tree node
+pc_expr[['T']]
+```
+
+Similarly, we can use TreeCorTreat plot to visualize the result:
+
+```{r,warning=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+# visualize
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2)
+```
+
+In addition to TreeCorTreat plot, users can apply `treecor_samplepcaplot` to visualize the low-dimensional embedding of samples for a given cell type (e.g. T cell category). 
+
+```{r,message=FALSE,warning=FALSE,fig.width=5, fig.height = 5, fig.align='center'}
+# PCA plot (using `T` node)
+treecor_samplepcaplot(sample_meta,
+                      pca_matrix = pc_expr[['T']],
+                      response_variable = 'severity',
+                      point_size = 3)
+```
+
+We can observe that samples’ severity progressively changes from healthy to severe along the direction indicated by the dashed line, which corresponds to an optimal axis inferred from CCA that maximizes the correlation between the severity and samples’ coordinates in the embedded space.
+
+# Module 5: Identify differentially expressed genes 
+
+The analysis of differentially expressed genes (DEGs) is wrapped into a function `treecor_deg()`. Here we first compute the pseudobulk gene expression profile for each tree node using the ‘Aggregate’ approach as before. In other words, for each node all cells from its descendants are pooled and aggregated into a pseudobulk profile in each sample. Pseudobulk profiles are normalized by library size. Limma was then used to conduct differential expression analysis:
+
+* Univariate phenotype/Multivariate phenotype analyzed separately: Fit a limma model by regressing gene expression against phenotype with covariate adjustment. DEGs passing a user-specified false discovery rate (FDR) cutoff (default cutoff = 0.05) will be reported for each node and saved into csv files along with log fold change, t-statistics, p-value and FDR.
+
+* Multivariate phenotype analyzed jointly: Multiple traits are combined into a univariate variable using either a data-driven approach (PC1) or user-specified weights (linear combination of multiple traits using weights). Then the aggregated trait will be analyzed as a univariate phnenotype.
+
+```{r,message=FALSE,warning=FALSE,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+# DEG pipeline
+res_deg <- treecor_deg(count,
+                       hierarchy_structure,
+                       cell_meta,
+                       sample_meta,
+                       response_variable = 'severity') # can change to TRUE
+names(res_deg)
+# summary of number of DEGs 
+head(res_deg$dge.summary)
+# extract DEGs for a specific tree node using cell type name
+severity.dge.ls <- res_deg$dge.ls[['severity']]
+head(severity.dge.ls[['T']]) 
+# extract sample-level pseudobulk for a specific tree node using cell type name
+head(res_deg$pseudobulk.ls[['T']]) 
+
+# visualize
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_deg$dge.summary,
+                 response_variable = 'severity',
+                 color_variable = 'num_deg',
+                 size_variable = 'num_deg',
+                 alpha_variable = NULL,
+                 annotate_number = T,
+                 annotate_number_column = 'num_deg',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2)
+```
+We can then use `treecor_degheatmap` to look at gene expression pattern for top n DEGs:
+
+```{r,warning = F, message = F,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+# heatmap for top 10 DEGs with positive log fold change (enriched in Severe)
+treecor_degheatmap(sample_meta,
+                   pseudobulk = res_deg$pseudobulk.ls[['T']],
+                   deg_result = res_deg$dge.ls$severity[['T']],
+                   top_n = 10,
+                   deg_logFC = "positive",
+                   annotation_col = c('severity','sex','age'),
+                   annotation_colors = list(severity = c('HD' = 'green','Se' = 'red'),
+                                            sex = c('F' = 'purple','M' = 'blue')))
+
+# heatmap for top 10 DEGs with negative log fold change (enriched in Healthy)
+treecor_degheatmap(sample_meta,
+                   pseudobulk = res_deg$pseudobulk.ls[['T']],
+                   deg_result = res_deg$dge.ls$severity[['T']],
+                   top_n = 10,
+                   deg_logFC = "negative",
+                   annotation_col = c('severity','sex','age'),
+                   annotation_colors = list(severity = c('HD' = 'green','Se' = 'red'),
+                                            sex = c('F' = 'purple','M' = 'blue')))
+
+# Combined two plots above
+treecor_degheatmap(sample_meta,
+                   pseudobulk = res_deg$pseudobulk.ls[['T']],
+                   deg_result = res_deg$dge.ls$severity[['T']],
+                   top_n = 10,
+                   deg_logFC = "both",
+                   annotation_col = c('severity','sex','age'),
+                   annotation_colors = list(severity = c('HD' = 'green','Se' = 'red'),
+                                            sex = c('F' = 'purple','M' = 'blue')))
+```
+
+# Module 6: Visualization
+
+TreeCorTreat provides a variety of functions to visualize both the intermediate and final results. For example, we can use `treecor_celldensityplot` to show cell type proportions for different sample groups (Module 3). `treecor_samplepcaplot`  projects samples to a shared low-dimensional embedding and find optimal axis (Module 4).`treecor_degheatmap` shows top differentially expressed genes of a given cell type (Module 5). In particular, in order to summarize the final results, we developed a versatile function `treecortreatplot` to display the multi-resolution cell type-phenotype association in a format we call **'TreeCorTreat plot'**. The plot consists of a dendrogram showing the cell types' hierarchical structure and information layers showing analysis results about each tree node.
+
+## Tree skeleton representation 
+
+For displaying the tree, the nodes can be connected using straight lines, a classical angle bend representation, or a quadratic bezier curve representation. Users can choose line aesthetics such as linetype (e.g. solid or dashed) and line color according to their preference. 
+
+### Edge type
+
+* Straight line
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 ## parameter: edge_path_type
+                 edge_path_type = "link")
+```
+
+* Classical angle bend
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.6,
+                 nonleaf_point_gap = 0.3,
+                 ## parameter: edge_path_type
+                 edge_path_type = "elbow")
+```
+
+Based on our experience, we recommend to use classical angle bend in a data-driven approach, avoiding intertwined lines.
+
+(3) Quadratic Bezier curves
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 ## parameter: edge_path_type
+                 edge_path_type = "diagonal")
+```
+
+### Line aesthetics: line type and color
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 ## parameter: line_type
+                 line_type = 'dashed',
+                 ## parameter: line_color
+                 line_color = 'darkgreen')
+```
+
+### Modify label or circle position
+
+In some cases where label length (cell type name) is long or circle size is quite large, default label or circle position on the non-leaf part (left) may not work well. Therefore, we introduce `nonleaf_label_pos` and `nonleaf_point_gap` parameters which allow users to manually fix the label position or gap between multivariate phenotype. A tip is that if one have $k$ phenotypes to be analyzed separately, one can first choose a proper gap between points (i.e. `nonleaf_point_gap = 0.1`) and let `nonleaf_label_pos = $k*nonleaf_point_gap + small_number$` (i.e. let $k=3$, `nonleaf_label_pos = 0.1*3+0.2 = 0.5`).In the above examples, we specify gap between points at 0.2 and label position at 0.4. 
+
+## Leaf representation
+
+For external node configuration, TreeCorTreat plot aligns cell types in the rows and phenotypes in the columns. There are three different ways to visualize the results: balloon plot, heatmap and barplot. Users can use color (`color_variable`), size (`size_variable`) and transparency (`alpha_variable`) to encode different information. 
+
+### Balloon plot
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 ## parameter: plot_type
+                 plot_type = 'balloon')
+```
+
+In the above balloon plot, the size of the balloon reflects the magnitude of canonical correlation between global gene expression profile and disease severity and color as well as transparency correspond to p-value significance.
+
+Alternatively, we can use color to represent canonical correlation and size/transparency to represent p-value significance using the following code:
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'p.sign',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 ## parameter: plot_type
+                 plot_type = 'balloon')
+```
+
+
+### Heatmap
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 ## parameter: plot_type
+                 plot_type = 'heatmap')
+```
+
+### Barplot
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'p.sign',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 ## parameter: plot_type
+                 plot_type = 'bar')
+```
+
+## More advanced plotting figures
+
+### Annotate numbers
+
+Users can specify `annotate_number`, `annotate_number_column` and `annotate_number_color` to specify which column/color to be used in annotating the TreeCorTreat plot.
+
+```{r,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon',
+                 annotate_number = T,
+                 annotate_number_column = 'cancor',
+                 annotate_number_color = 'black')
+```
+
+### Modify legend title
+
+If we want to modify legend title, one way is to change column names of `annotated_df`. The column names for summary statistic and statistical significance are usually defined in `response_variable.colname` format (e.g. severity.cancor, severity.p, etc). Thus, it's crucial to check the column names are in the correct format before generating TreeCorTreat plot.
+
+Suppose we hope to modify names for both response variables ('severity') and legends (i.e. 'cancor' and 'p.sign'): capitalize the first letter in 'severity' and 'cancor' and replace 'p.sign' by 'P-value significance'. 
+
+```{r,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+## modify column names
+colnames(res_expr)
+res_expr_new <- res_expr
+colnames(res_expr_new) <- gsub('severity','Severity',colnames(res_expr_new))
+colnames(res_expr_new) <- gsub('cancor','Cancor',colnames(res_expr_new))
+colnames(res_expr_new) <- gsub('\\.p.sign','\\.P-value significance',colnames(res_expr_new))
+
+## check modified column names
+colnames(res_expr_new)
+
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr_new,
+                 response_variable = 'Severity',
+                 color_variable = 'P-value significance',
+                 size_variable = 'Cancor',
+                 alpha_variable = 'P-value significance',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon')
+```
+
+### Modify label colors
+
+Users can modify different label colors to highlight cell types of interest. For example, we can highlight cell types that have significant global gene expression-disease severity correlation in red:
+
+```{r,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+label_info <- data.frame(label = res_expr$label,
+                         label.color = ifelse(res_expr$severity.p.sign == 'ns','black','red'))
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon',
+                 advanced_list = list(label_info = label_info))
+```
+
+
+### Create your own mapping from levels to aesthetic values
+
+Users can customize mapping from levels in the data (e.g. categorical variables) to certain aesthetic values (e.g. color/size/transparency) via `breaks` and `values` (alike `scale_xx_manual()` in `ggplot2`). The following code illustrates an example of changing color of statistical significance as blue (non-significant) and red (significant) and modifying transparency:
+
+```{r,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+advanced_list <- list(color_info = data.frame(breaks = c('ns','sig'), values = c('blue','red')),
+                      alpha_info = data.frame(breaks = c('ns','sig'), values = c(0.5,1)))
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon',
+                 advanced_list = advanced_list)
+```
+
+### Choose a different color palette
+
+For categorical variable, color palette can be specified by `color_info` in advanced options; For continuous variable, we provide different palettes from `RColorBrewer` package (default is 'Spectral') and can be modified via `palette` as a element in the `advanced_list`.
+
+```{r,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon',
+                 advanced_list = list(palette = 'PiYG'))
+```
+
+### Configure layout
+
+The layout of TreeCorTreat plot can be modified via `layout_widths` in the `advanced_list` parameter, which specifies the relative left-to-right ratio (or non-leaf: leaf ratio). 
+
+```{r,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon',
+                 advanced_list = list(layout_widths = c(2,1)))
+```
+
+## Save TreeCorTreat plots
+
+TreecorTreat plots can be saved into pdf, png or other graphical formats.
+
+```{r, warning = F,eval = F}
+png('TreeCorTreat_plot.png', height = 8, width = 15, res = 300, units = 'in')
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon')
+dev.off()
+``` 
+
+# TreeCorTreat supports versatile multi-resolution analysis
+
+To analyze cell type-phenotype association at multiple resolutions, fine-grained cell clusters (children) are progressively merged into bigger clusters (parents). When a parent node is created by merging two or more child nodes, the information from the children can be combined in multiple different ways with different implications. The two basic methods to combine child nodes are 'aggregation' and 'concatenation'. The 'aggregation' method pools all cells from the child nodes into a single pseudobulk sample which is used to represent the parent node. In the 'concatenation' method, one first pools cells within each child node to form a pseudobulk sample for that node. One represents each child node using a feature or a feature vector  extracted from its pseudobulk sample (e.g., highly variable genes). The parent node is then represented by concatenating the feature vectors from all child nodes into a longer vector.
+
+To support different needs of users, TreeCorTreat provides three different ways to combine child nodes: 'aggregate' (default), 'concatenate leaf nodes', and 'concatenate immediate children'. 
+
+## Aggregate
+
+The default setting for both `treecor_expr` and `treecor_ctprop` is aggregation (see previous examples), where we aggregate raw read counts for gene expression or number of cells for cell composition for non-leaf nodes.
+
+## Concatenate leaf nodes
+
+In the 'concatenate leaf nodes' approach, feature vectors of all terminal leaf nodes derived from a node are concatenated into a long vector to serve as the feature vector of the node. For global gene expression analysis, this will result in a concatenated vector consisting of pseudobulk expression of highly variable genes obtained from each leaf node. For cell type proportion analysis, this will result in a vector of cell type proportions of the leaf nodes.
+
+```{r,message=FALSE,warning=FALSE,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+# gene expression pipeline; concat_leaf
+res_expr_concatLeaf <- treecor_expr(count,
+                                    hierarchy_structure,
+                                    cell_meta,
+                                    sample_meta,
+                                    response_variable = 'severity',
+                                    method = 'concat_leaf',
+                                    num_permutations = 100)$canonical_corr
+head(res_expr_concatLeaf)
+```
+
+## Concatenate immediate children
+
+In the 'concatenate immediate children' approach, a node's immediate children are first identified. The feature vector of each immediate child is obtained using the 'aggregate' approach. Then feature vector of target node is obtained by concatenating the feature vectors of its immediate children. 
+
+```{r,message=FALSE,warning=FALSE,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+# gene expression pipeline; concat_immediate_children
+res_expr_concatImmChild <- treecor_expr(count,
+                                        hierarchy_structure,
+                                        cell_meta,
+                                        sample_meta,
+                                        response_variable = 'severity',
+                                        method = 'concat_immediate_children',
+                                        num_permutations = 100)$canonical_corr
+head(res_expr_concatImmChild)
+
+# compare 3 methods (non-leaf nodes)
+summary_ls <- list(res_expr %>% filter(!leaf) %>% select(id,label,severity.cancor) %>% rename(aggregate = severity.cancor),
+                   res_expr_concatLeaf %>% filter(!leaf) %>% select(id,label,severity.cancor) %>% rename(concatLeaf = severity.cancor),
+                   res_expr_concatImmChild %>% filter(!leaf) %>% select(id,label,severity.cancor) %>% rename(concatImmChild = severity.cancor))
+summary <- Reduce(inner_join,summary_ls) 
+summary
+```
+For some broad cell categories like B, T and Monocytes, the canonical correlation of leaf concatenation and immediate children concatenation are the same because the immediate children set is same as its corresponding leaf nodes. Depending on different tree hierarchies, three approaches may have different results and implications. This can also be visualized using TreeCorTreat plot:
+
+```{r, message=F,warning=F,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+# aggregate
+colnames(res_expr) <- gsub('severity','Severity\n(Aggregate)',colnames(res_expr))
+# concat_leaf
+colnames(res_expr_concatLeaf) <- gsub('severity','Severity\n(ConcatLeaf)',colnames(res_expr_concatLeaf))
+# concat_immediate_children
+colnames(res_expr_concatImmChild) <- gsub('severity','Severity\n(ConcatImmChild)',colnames(res_expr_concatImmChild))
+
+# combine three approaches
+res_combined <- Reduce(inner_join,list(res_expr,res_expr_concatLeaf,res_expr_concatImmChild))
+
+# plot
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = c('Severity\n(Aggregate)','Severity\n(ConcatImmChild)','Severity\n(ConcatLeaf)'),
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon')
+```
+
+
+# Analysis of multivariate outcomes
+
+When there are multiple phenotypic traits, one can either analyze each trait separately as a univariate phenotype or analyze them jointly as a multivariate phenotype. For analyzing association between a multivariate phenotype and cell type proportion or global gene expression, CCA is used to compute the canonical correlation between the phenotype and cell type features (i.e. cell type proportion or gene expression).
+
+## Separate evaluation
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+# individually
+multi_expr_sep <- treecor_expr(count,
+                               hierarchy_structure,
+                               cell_meta,
+                               sample_meta,
+                               response_variable = c('severity','age'),
+                               num_permutations = 100)$canonical_corr
+# visualize
+treecortreatplot(hierarchy_structure,
+                 annotated_df = multi_expr_sep,
+                 response_variable = c('severity','age'),
+                 separate = T,
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.5,
+                 nonleaf_point_gap = 0.2)
+```
+
+## Joint evaluation
+
+Alternatively, we can analyze both severity and age jointly.
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 8, fig.align='center'}
+# jointly
+multi_expr_joint <- treecor_expr(count,
+                                 hierarchy_structure,
+                                 cell_meta,
+                                 sample_meta,
+                                 response_variable = c('severity','age'),
+                                 separate = F,
+                                 num_permutations = 100)$canonical_corr
+# visualize
+treecortreatplot(hierarchy_structure,
+                 annotated_df = multi_expr_joint,
+                 response_variable = c('severity','age'),
+                 separate = F,
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.2,
+                 nonleaf_point_gap = 0.1)
+```
+
+For analyzing differential gene expression, a multivariate phenotype is first transformed into a univariate phenotype either using the principal component analysis or using a linear combination of traits with weights specified by users. The transformed univariate phenotype, which combines information from multiple traits, is then used to run differential expression analysis.
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+# jointly
+multi_deg_joint <- treecor_deg(count,
+                               hierarchy_structure,
+                               cell_meta,
+                               sample_meta %>% mutate(severity = ifelse(severity == "HD", 0,1)),
+                               response_variable = c('severity','age'),
+                               separate = F,
+                               save_as_csv = F)$dge.summary
+head(multi_deg_joint)
+```
+
+# Adjusting for covariates in TreeCorTreat analysis
+
+TreeCorTreat is capable of handling covariates in the analysis, allowing users to adjust for potential confounders or unwanted technical variation. For example, instead of viewing age as a phenotype, one can also view it as a covariate and ask which cell type features are associated with disease severity after accounting for age.
+
+```{r,warning=F,message=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+# adjust for age
+expr_adjusted <- treecor_expr(count,
+                              hierarchy_structure,
+                              cell_meta,
+                              sample_meta,
+                              response_variable = 'severity',
+                              formula = '~age',
+                              num_permutations = 100)$canonical_corr
+# visualize
+treecortreatplot(hierarchy_structure,
+                 annotated_df = expr_adjusted,
+                 response_variable = 'severity',
+                 color_variable = 'p.sign',
+                 size_variable = 'cancor',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.2,
+                 nonleaf_point_gap = 0.1)
+```
