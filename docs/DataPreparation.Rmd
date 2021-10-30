@@ -1,0 +1,159 @@
+---
+title: "TreeCorTreat - Data Prepartion"
+author: 
+  - name: Boyang Zhang
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+  - name: Zhicheng Ji
+    affiliation: 
+      - &id2 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+  - name: Hongkai Ji
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+maintainer:
+  - name: Boyang Zhang
+    email: 
+      - "bzhang34@jhu.edu"
+      
+package: TreeCorTreat
+output: BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{TreeCorTreat}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+# Introduction
+
+In this tutorial, we are going to introduce the input data structure of **TreeCorTreat** and demonstrate some basic R functions to import gene expression matrix, cell-level and sample-level metadata from csv files. If you are familiar with single-cell RNA-seq data and R programming, you can skip this tutorial and check the step-by-step user manual [here](https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html).
+
+Please note that more advanced topics, such as preprocessing pipeline and how to load in data from 10X, will not be covered in this tutorial. Here are some useful links:
+
+* Processing raw scRNA-seq data: https://scrnaseq-course.cog.sanger.ac.uk/website/processing-raw-scrna-sseq-data.html
+* Seurat - Load in data from 10X: https://satijalab.org/seurat/reference/read10x  
+
+# Input data
+
+TreeCorTreat takes a gene expression matrix (raw count), cell-level metadata and sample-level metadata as input. 
+
+## Gene expression data
+
+Gene expression is a matrix, where each row is a gene and each column is a cell. Each row names refers to a specific gene and each column encodes a cell's unique barcode. 
+
+### Gene expression matrix of one sample
+
+For demonstration purpose, we generate a small toy example, which can be accessed [here](https://github.com/byzhang23/TreeCorTreat/blob/master/docs/Gene_Expression.csv). 
+This dataset contains contains 100 genes and 100 cells of one sample. 
+
+For gene expression matrices stored in csv or txt format, users can read in the dataset using `fread` function from `data.table` R package.
+
+```{r, echo=F}
+setwd('../docs/')
+```
+
+```{r,message=F}
+library(data.table)
+input_data <- fread('Gene_Expression.csv')
+input_data[1:3,1:3]
+
+# class of this object
+class(input_data)
+```
+
+The first column encodes gene names and all the remaining columns (e.g. from 2nd to the last column) annotate cell barcodes. The `input_data` is a `data.frame` object. Next, we are going to convert `input_data` into a `matrix` object:
+
+```{r}
+# remove 1st column (gene names) from input_data
+input_mat <- as.matrix(input_data[,-1])
+
+# specify gene names as rownames
+rownames(input_mat) <- input_data$V1
+
+dim(input_mat)
+input_mat[1:3,1:3]
+class(input_mat)
+```
+
+### Gene expression matrices of multiple samples
+
+From the above example, we are able to load in gene expression dataset from one sample. What if we have multiple samples? We can repeat the aforementioned process across all samples. [Here](https://github.com/byzhang23/TreeCorTreat/tree/master/docs/multisample) provides another example of four gene expression datasets (saved as csv format), corresponding to four different samples. Each file is marked by samples' unique ID: Sample1, Sample2, Sample3 and Sample4.
+
+```{r}
+# multisample directory
+current_work_dir <- './multisample/'
+filenames <- list.files(current_work_dir)
+filenames
+```
+
+We can then use a `for` loop to read in these four files and save the files as a list:
+
+```{r}
+# initialize a list
+expr.ls <- list()
+
+# for loop
+for(i in 1:length(filenames)){
+  input_data <- fread(paste0(current_work_dir,filenames[i])) # read in i th file
+  input_mat <- as.matrix(input_data[,-1])
+  
+  # specify gene names as rownames
+  rownames(input_mat) <- input_data$V1
+  
+  # revise column names as 'sampleID:barcode' format
+  sampleID <- gsub('\\.csv','',filenames[i])
+  colnames(input_mat) <- paste0(sampleID,':',colnames(input_mat))
+  
+  # store in i th element in the list
+  expr.ls[[i]] <- input_mat
+}
+
+names(expr.ls) <- gsub('\\.csv','',filenames)
+names(expr.ls)
+```
+
+Let's do some sanity checks before concatenate different samples: (1) the rownames (or order of the genes to be included) should be the same across all samples
+
+```{r}
+sapply(expr.ls,function(x) identical(rownames(x),rownames(expr.ls[[1]])))
+```
+
+and (2) there is no duplicated cell barcode across all samples
+
+```{r}
+all_column_names <- do.call(c,lapply(expr.ls,function(x) colnames(x)))
+length(all_column_names)
+
+sum(duplicated(all_column_names))
+```
+
+Then, we can proceed to combine gene expression matrices across different samples into one large matrix, where row are genes and columns are cells:
+
+```{r}
+expr_mat <- do.call(cbind,expr.ls)
+dim(expr_mat)
+```
+
+
+## Cell-level metadata
+
+The second component of our input is cell-level metadata, which contains cell barcode and its corresponding sample ID (i.e. which cell is coming from). Using the multi-sample example again, we can extract the cell-level data by implementing the following code:
+
+```{r}
+cell_meta <- data.frame(barcode = colnames(expr_mat),
+                        sample = sub('\\:.*','',colnames(expr_mat)))
+head(cell_meta)
+```
+
+Cell barcode is used to couple cell-level metadata and gene expression matrix. Users can also add an additional column `celltype` if one knows celltype annotation of a specific cell. Alternatively, one can infer `celltype` in Module1: data integration.
+
+## Sample-level metadata
+
+The third component is sample-level metadata, which documents a sample's phenotype(s) of interests (e.g. clinical outcome) and other related covariates (e.g. age and sex). The first column contains unique sample IDs, and the remaining columns contain phenotypes and covariates. The cell-level metadata and sample-level metadata can be linked via unique sample IDs (i.e.`sample`). 
+
+In the multi-sample example, the sample metadata can be accessed [here](https://github.com/byzhang23/TreeCorTreat/blob/master/docs/SampleMeta.csv). Similarly, we can use `fread` or `read.csv` functions to load in the sample-meta.
+
+```{r}
+sample_meta <- read.csv('SampleMeta.csv')
+sample_meta
+```
