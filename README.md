@@ -52,7 +52,7 @@ If you are not familiar with R programming and want to explore how to load in da
 ## Citation
 Please cite the following paper:
 
-Boyang Zhang, Zhicheng Ji and Hongkai Ji. Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [bioRxiv link]
+Boyang Zhang, Zhicheng Ji and Hongkai Ji. Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. bioRxiv. doi: https://doi.org/10.1101/2021.10.27.466024
 
 ## Contact
 
