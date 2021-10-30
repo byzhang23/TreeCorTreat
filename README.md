@@ -42,11 +42,12 @@ if (!require("devtools"))
   install.packages("devtools")
 devtools::install_github("byzhang23/TreeCorTreat")
 ```
-## Tutorial
+## Tutorials
 
-For the step-by-step tutorial, please refer to:
+For the user manual of TreeCorTreat, please refer to:
 https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html 
 
+If you are not familiar with R programming and want to explore how to load in datasets from csv/txt files, please check here: https://byzhang23.github.io/TreeCorTreat/DataPreparation.html
 
 ## Citation
 Please cite the following paper:
