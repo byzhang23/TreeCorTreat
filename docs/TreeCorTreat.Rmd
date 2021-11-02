@@ -139,7 +139,7 @@ new_label <- data.frame(old = sort(factor(unique(cell_meta$celltype,levels = 1:1
          new = paste0(large_celltype,'_c',old)) %>% select(-large_celltype)
 new_label
 ```
-## Modify cell type annotation (optional)
+## Modify cell type annotation
 
 Users can modify the cell type label via `modify_label` function to update cell type annotations in `cell_meta`:
 
@@ -148,6 +148,9 @@ Users can modify the cell type label via `modify_label` function to update cell 
 cell_meta <- modify_label(new_label,hierarchy_list = NULL,cell_meta)$cell_meta
 head(cell_meta[,c('barcode','sample','celltype')])
 ```
+
+Similarly, one can also update cell type annotation in hierarchical tree structure using this function
+(i.e. `modify_label(new_label,hierarchy_list = hierarchy_list,cell_meta = NULL)$hierarchy_list`).
 
 ## Construct hierarchical tree structure
 
@@ -297,6 +300,7 @@ The list of PC matrices are named by cell type names specified in `celltype` col
 treecor_samplepcaplot(sample_meta,
                       pca_matrix = pc_expr[['T']],
                       response_variable = 'severity',
+                      font_size = 10,
                       point_size = 3)
 ```
 
