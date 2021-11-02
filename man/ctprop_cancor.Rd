@@ -31,7 +31,12 @@ ctprop_cancor(
 
 \item{formula}{An object of class 'formula': a symbolic description of the model to be fitted, adjusting for confounders.}
 
-\item{analysis_type}{'pearson' (default) or 'spearman' correlation or 'regression' for aggregate approach.}
+\item{analysis_type}{\itemize{
+\item pearson: Pearson correlation (default; only works when method = 'aggregate')
+\item spearman: Spearman correlation (only works when method = 'aggregate')
+\item cancor: Canonical correlation
+\item regression: Regression framework
+}}
 
 \item{leaves_info}{A data frame that encodes leaf children for each node. Can be extracted from 'hierarchy_list' by running \code{'extract_hrchy_string()'} or \code{'extract_hrchy_seurat()'} function}
 
