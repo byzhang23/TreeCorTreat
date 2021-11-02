@@ -6,7 +6,12 @@
 #' @param response_variable     A vector of response variables. Will be used to calculate canonical correlation.
 #' @param method                A character string indicating which approach is used to summarize features. One of 'concat_leaf (default)' or 'concat_immediate_children' or 'aggregate'.
 #' @param formula               An object of class 'formula': a symbolic description of the model to be fitted, adjusting for confounders.
-#' @param analysis_type         'pearson' (default) or 'spearman' correlation or 'regression' for aggregate approach.
+#' @param analysis_type         \itemize{
+#' \item pearson: Pearson correlation (default; only works when method = 'aggregate')
+#' \item spearman: Spearman correlation (only works when method = 'aggregate')
+#' \item cancor: Canonical correlation
+#' \item regression: Regression framework
+#' }
 #' @param leaves_info           A data frame that encodes leaf children for each node. Can be extracted from 'hierarchy_list' by running \code{'extract_hrchy_string()'} or \code{'extract_hrchy_seurat()'} function
 #' @param immediate_children    A data frame that contains immediate children for each node. Can be extracted from 'hierarchy_list' by running \code{'extract_hrchy_string()'} or \code{'extract_hrchy_seurat()'} function
 #' @param component_id          An index to extract canonical correlation component (by default: 1).
@@ -32,6 +37,17 @@ ctprop_cancor <- function(cell_meta, sample_meta, response_variable, method,form
 
     if(length(miss_label)>0){
         warning('Does not contain cells from the following celltype(s): ', paste(miss_label,collapse = ' '))
+    }
+    
+    # check response_variable numeric
+    y <- sample_meta[,response_variable,drop = F]
+    convert_column <- which(!sapply(y,is.numeric))
+    response_unique <- unique(y)
+    rank_zero <- ifelse(is.null(ncol(y)), length(response_unique)==1,nrow(response_unique)==1)
+    
+    ## Check if all values are numeric
+    if(length(convert_column)>0 & analysis_type %in% c('pearson','spearman','cancor')){
+        warning(paste0(paste(colnames(y)[convert_column],collapse = ','),' is not numeric. Proceed with factorized numeric values.'))
     }
 
     ## m1: aggregate (analysis_type)

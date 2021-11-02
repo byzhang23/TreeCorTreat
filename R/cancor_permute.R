@@ -26,7 +26,7 @@ cancor_permute <- function(x, y, method, num_permutations,alternative, component
 
     ## Check if all values are numeric
     if(length(convert_column)>0 & method %in% c('pearson','spearman','cancor')){
-        warning(paste0(paste(colnames(y)[convert_column],collapse = ','),' is not numeric. Proceed with factorized numeric values.'))
+        # warning(paste0(paste(colnames(y)[convert_column],collapse = ','),' is not numeric. Proceed with factorized numeric values.'))
         for(j in convert_column){
             y[,j] <- as.numeric(as.factor(y[,j]))
         }

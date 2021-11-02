@@ -17,6 +17,17 @@
 
 expr_cancor <- function(pca.ls, sample_meta, response_variable, analysis_type, num_permutations, alternative, component_id = 1, ncores){
 
+    # check response_variable numeric
+    y <- sample_meta[,response_variable,drop = F]
+    convert_column <- which(!sapply(y,is.numeric))
+    response_unique <- unique(y)
+    rank_zero <- ifelse(is.null(ncol(y)), length(response_unique)==1,nrow(response_unique)==1)
+    
+    ## Check if all values are numeric
+    if(length(convert_column)>0 & analysis_type %in% c('pearson','spearman','cancor')){
+        warning(paste0(paste(colnames(y)[convert_column],collapse = ','),' is not numeric. Proceed with factorized numeric values.'))
+    }
+    
     summary <- do.call(rbind,mclapply(pca.ls,function(pc){
         if(is.null(pc)){
             cancor_p <- data.frame(cancor = NA,p = NA)
