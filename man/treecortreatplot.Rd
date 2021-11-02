@@ -20,7 +20,6 @@ treecortreatplot(
   font_size = 10,
   nonleaf_label_pos = 0.6,
   nonleaf_point_gap = NULL,
-  override_legend_size = 1,
   edge_path_type = "link",
   plot_type = "balloon",
   line_color = "black",
@@ -66,8 +65,6 @@ treecortreatplot(
 \item{nonleaf_label_pos}{A number from 0 to 1, controlling the relative positions of non-leaf labels (default: 0.6). Default tree height between adjacent hierarchy levels is 1.}
 
 \item{nonleaf_point_gap}{Specify the gap between circles in non-leaf (left) part, especially useful when works with multivariate phenotypes.}
-
-\item{override_legend_size}{A number of specify a point size to override current legend using \code{guide = guide_legend(override.aes = list(size = override_legend_size))}. Default is 1.}
 
 \item{edge_path_type}{Specify an edge type, must be one of:
 \itemize{

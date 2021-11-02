@@ -24,7 +24,6 @@
 #' @param font_size             Font size
 #' @param nonleaf_label_pos     A number from 0 to 1, controlling the relative positions of non-leaf labels (default: 0.6). Default tree height between adjacent hierarchy levels is 1.
 #' @param nonleaf_point_gap     Specify the gap between circles in non-leaf (left) part, especially useful when works with multivariate phenotypes.
-#' @param override_legend_size  A number of specify a point size to override current legend using \code{guide = guide_legend(override.aes = list(size = override_legend_size))}. Default is 1.
 #' @param edge_path_type        Specify an edge type, must be one of:
 #'                              \itemize{
 #'                              \item link (default): Use straight lines to connect start and end nodes by applying \code{geom_edge_link()} in \code{ggraph} package. Recommended only for pre-set approach (i.e. generate hierarchy_list using \code{extract_hrchy_string()}).
@@ -59,7 +58,7 @@
 #' treecortreatplot(hierarchy_list, annotated_df, response_variable = 'severity', color_variable = 'adjp.sign', size_variable = 'cancor', alpha_variable = 'adjp.sign',nonleaf_label_pos = 0.25,nonleaf_point_gap = 0.15, plot = T)
 
 
-treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, separate = T, num_cancor_components = 1,color_variable = NULL, size_variable = NULL, alpha_variable = NULL, advanced_list = NULL, annotate_number = F, annotate_number_column = NULL, annotate_number_color = 'black', font_size = 10, nonleaf_label_pos = 0.6, nonleaf_point_gap = NULL, override_legend_size = 1, edge_path_type = 'link', plot_type = 'balloon',line_color = 'black', line_type = 'solid',plot = T){
+treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, separate = T, num_cancor_components = 1,color_variable = NULL, size_variable = NULL, alpha_variable = NULL, advanced_list = NULL, annotate_number = F, annotate_number_column = NULL, annotate_number_color = 'black', font_size = 10, nonleaf_label_pos = 0.6, nonleaf_point_gap = NULL, edge_path_type = 'link', plot_type = 'balloon',line_color = 'black', line_type = 'solid',plot = T){
 
     #############################
     ## 1. Define outcome variable
@@ -409,23 +408,20 @@ treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, se
                 scale_color_distiller(color_variable,
                                       palette = ifelse(sum(names(advanced_list)=='palette')>0,advanced_list$palette[1],'Spectral'),
                                       na.value = "white",
-                                      limits = color_info$limit,
-                                      guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                      limits = color_info$limit)
 
             if(plot_type == 'balloon'){
                 leaf_plot_color <- leaf_plot_size +
                     scale_color_distiller(color_variable,
                                           palette = ifelse(sum(names(advanced_list)=='palette')>0,advanced_list$palette[1],'Spectral'),
                                           na.value = "white",
-                                          limits = color_info$limit,
-                                          guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                          limits = color_info$limit)
             }else{
                 leaf_plot_color <- leaf_plot_size +
                     scale_fill_distiller(color_variable,
                                          palette = ifelse(sum(names(advanced_list)=='palette')>0,advanced_list$palette[1],'Spectral'),
                                          na.value = "white",
-                                         limits = color_info$limit,
-                                         guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                         limits = color_info$limit)
             }
 
 
@@ -442,14 +438,12 @@ treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, se
                 scale_color_manual(color_variable,
                                    breaks = color_breaks,
                                    limits = color_info$limit,
-                                   values = color_values,
-                                   guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                   values = color_values)
             leaf_plot_color <- leaf_plot_size +
                 scale_color_manual(color_variable,
                                    breaks = color_breaks,
                                    limits = color_info$limit,
-                                   values = color_values,
-                                   guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                   values = color_values)
         }
     }else{
         nonleaf_plot_color <- nonleaf_plot_size
@@ -463,14 +457,12 @@ treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, se
             nonleaf_plot <- nonleaf_plot_color +
                 scale_alpha_continuous(alpha_variable,
                                        limits = alpha_info$limit,
-                                       range = c(0.1,1),
-                                       guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                       range = c(0.1,1))
 
             leaf_plot <- leaf_plot_color +
                 scale_alpha_continuous(alpha_variable,
                                        limits = alpha_info$limit,
-                                       range = c(0.1,1),
-                                       guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                       range = c(0.1,1))
 
 
         }else{
@@ -480,28 +472,24 @@ treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, se
                     scale_alpha_manual(alpha_variable,
                                        limits = alpha_info$limit,
                                        breaks = advanced_list$alpha_info$breaks,
-                                       values = advanced_list$alpha_info$values,
-                                       guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                       values = advanced_list$alpha_info$values)
                 leaf_plot <- leaf_plot_color +
                     scale_alpha_manual(alpha_variable,
                                        limits = alpha_info$limit,
                                        breaks = advanced_list$alpha_info$breaks,
-                                       values = advanced_list$alpha_info$values,
-                                       guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                       values = advanced_list$alpha_info$values)
             }else{
                 nonleaf_plot <- nonleaf_plot_color +
                     scale_alpha_discrete(alpha_variable,
                                          limits = alpha_info$limit,
                                          breaks = alpha_info$limit,
-                                         range = c(0.1,1),
-                                         guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                         range = c(0.1,1))
 
                 leaf_plot <- leaf_plot_color +
                     scale_alpha_discrete(alpha_variable,
                                          limits = alpha_info$limit,
                                          breaks = alpha_info$limit,
-                                         range = c(0.1,1),
-                                         guide = guide_legend(override.aes = list(size = override_legend_size)))
+                                         range = c(0.1,1))
             }
 
         }
