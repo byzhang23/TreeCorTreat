@@ -47,10 +47,10 @@ cancor_permute <- function(x, y, method, num_permutations,alternative, component
 
         }else{
         # (2) Sampling
-            new.idx <- t(sapply(1:num_permutations,function(b){
+            new.idx <- do.call(rbind,lapply(1:num_permutations,function(b){
                 set.seed(b)
-                vec = sample(1:nrow(y),replace = F)
-                if(identical(vec,1:nrow(y))) vec = NULL
+                vec <- sample(1:nrow(y),replace = F)
+                if(identical(vec,1:nrow(y))) vec <- NULL
                 vec
             })) %>% unique
         }
