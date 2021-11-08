@@ -1,0 +1,84 @@
+---
+title: "Generalized TreeCorTreat Plot"
+author: 
+  - name: Boyang Zhang
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+  - name: Zhicheng Ji
+    affiliation: 
+      - &id2 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+  - name: Hongkai Ji
+    affiliation: 
+      - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+maintainer:
+  - name: Boyang Zhang
+    email: 
+      - "bzhang34@jhu.edu"
+      
+package: TreeCorTreat
+output: BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{TreeCorTreat}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+In the step-by-step [tutorial](https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html), we discussed how to explored different features at multi-resolution of multi-sample scRNA-seq datasets using **TreeCorTreat**. We introduced **TreeCorTreat plot** as a novel visualization tool to summarize and visualize results (e.g. phenotype-cell type association) at multiple resolutions. In addition to genomics context, TreeCorTreat plot can be generalized and applied to other fields or data types with hierarhical structure as well, such as brain imaging and multi-site observational study. In this tutorial, we will demonstrate the basic data structure and outline necessary steps to draw a (generalized) TreeCorTreat plot for non-genomics settings. 
+
+# Steps to generate TreeCorTreat plot
+
+## Step 1: Hierarchical tree structure
+
+The first crucial component is to define a hierarchical tree structure by data-driven or knowledge-based approach. If the data is categorized by nature or pre-defined criteria (e.g. geographical regions), users can provide a string to describe the parent-children relationship of clusters at different granularity levels. The string will be parsed by a function `extract_hrchy_string()` to create the tree. For example, `@Country(@StateA(City1,City2),@StateB(City3,City4,City5))` indicates that a country can be broadly categorized into two states: State A and State B. At city level, there are two cities (City1 and City2) for state A and three cities (City3, City4, City5) for state B. 
+
+```{r,message=F,warning=F,out.width='\\textwidth', fig.height = 4, fig.align='center'}
+library(TreeCorTreat)
+input_string <- '@Country(@StateA(City1,City2),@StateB(City3,City4,City5))'
+hierarchy_structure <- extract_hrchy_string(input_string,special_character = '@')
+```
+
+On the other hand, hierarhical clustering or phylogenetic tree can be built to construct the underlying hierarchical structure, which can be extracted via `extract_hrchy_seurat()`. Current `extract_hrchy_seurat()` only supports to extract hierarhical information from a Seurat object or a phylogenetic tree (from 'ape' R package). One shall convert a clustering tree into a phylogenetic tree (e.g. `as.phylo()` after applying `hclust()`) before applying `extract_hrchy_seurat()` function.
+
+The `layout` element in the resulted hierarhical list documents the label, xy coordinates and a unique ID for each tree node, which will be used for generating `treecortreatplot`.
+
+## Step 2: Prepare a proper data frame to store results
+
+The second component in TreeCorTreat plot is to properly prepare a result data frame. This result data frame will be passed into `annotated_df` argument in the `treecortreatplot()` function. For each tree node, one would use a statistic (e.g. summary statistic or p-value) as a quantification. To distinguish multiple phenotypes and various test statistics/measurements, users shall annotate column names by including both phenotype variable and statistic/measurement name with `.` as a separation in `PhenotypeVariable.Statistics` format. Suppose we want to visualize two types of phenotypes: Phenotype 1 and Phenotype 2. We have four columns: `Phenotype 1.Percent` and `Phenotype 2.Percent` represent two measurements (%) in 2021; `Phenotype 1.Changes` and `Phenotype 2.Changes` represent the changes in measurements (%) in 2021 compared to previous year.
+
+```{r}
+result <- data.frame(`label` = c('Country','StateA','StateB',paste0('City',1:5)),
+                     `Phenotype 1.Percent` = c(50,40,60,10,70,85,55,65),
+                     `Phenotype 2.Percent` = c(55,45,65,15,75,90,60,70),
+                     `Phenotype 1.Changes` = c('+','+','-','+','+','-','+','-'),
+                     `Phenotype 2.Changes` = c('-','+','-','-','+','-','+','-'),
+                     check.names = F)
+result
+```
+
+The data frame should contains a `label` column that corresponds to labels of tree nodes to be drawn in the TreeCorTreat plot. This column must be matched with the node labels used in/obtained from `hierarhical_list` by running `extract_hrchy_string` or `extract_hrchy_seurat` functions. In `treecortreatplot()` function, we use unique ID to distinguish tree nodes. Therefore, we will merge the above `result` data frame with `layout` element from the `hierarhichy_list` using `label` column as join key to create `annotated_df`.
+
+```{r,message=F}
+annotated_df <- dplyr::inner_join(result,hierarchy_structure$layout)
+annotated_df
+```
+
+## Step 3: TreeCorTreat plot visualization
+
+Users can specify different phenotype names as a vector through `response_variable` argument to visualize multiple phenotypes in a TreeCorTreat plot. Also, users can specify different statistic/measurements for plotting aesthetic via `color_variable` or `size_variable` or `alpha_variable`. 
+
+```{r,out.width='\\textwidth', fig.height = 6, fig.align='center'}
+treecortreatplot(hierarchy_list = hierarchy_structure,
+  annotated_df = annotated_df,
+  response_variable = c('Phenotype 1','Phenotype 2'),
+  color_variable = 'Changes',
+  size_variable = 'Percent',
+  nonleaf_point_gap = 0.2,
+  nonleaf_label_pos = 0.5,
+  plot = T)
+```
+
+TreeCorTreat also provides a variety of functions to support customized configurations, such as modifying tree skeleton representation (e.g. straight line, curve, dendrogram) and leaf representation (e.g. balloon plot, heatmap, barplot), including more advanced plotting options (e.g. annotate numbers, modify label colors, etc). Please refer to step-by-step [tutorial](https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html) for more details.
+
+
