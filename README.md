@@ -19,6 +19,8 @@ The modular structure provides users with the flexibility to skip certain analys
 
 TreeCorTreat software can be installed via Github. Users should have R installed on their computer before installing TreeCorTreat. R version needs to be at least 3.6.1 or higher. R can be downloaded here: http://www.r-project.org/.
 
+For Windows users, Rtools is also required to be installed. Rtools can be downloaded here: https://cloud.r-project.org/bin/windows/Rtools/. Please find a compatible Rtools version and install with default options. For Rtools4, please follow the instructions provided in this website after installation is complete: https://cran.r-project.org/bin/windows/Rtools/.
+
 Users shall also install the following R packages before installing TreeCorTreat:
 
 * [Seurat v3](https://satijalab.org/seurat/index.html)
@@ -28,6 +30,7 @@ Users shall also install the following R packages before installing TreeCorTreat
 **TreeCorTreat package is developed based on Seurat v3 (e.g. v3.2.2)**, because there are some reported issues remained to be resolved in the latest Seurat v4 release. In order to implement TreeCorTreat successfully, please make sure to install Seurat v3 release with the following command:
 
 ```{r}
+install.packages('remotes')
 remotes::install_version("Seurat", version = "3.X.X") # version = '3.2.2'
 ```
 
