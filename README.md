@@ -21,6 +21,9 @@ TreeCorTreat software can be installed via Github. Users should have R installed
 
 For Windows users, Rtools is also required to be installed. Rtools can be downloaded here: https://cran.r-project.org/bin/windows/Rtools/history.html. Please find a compatible Rtools version and install with default options. For Rtools4, please follow the instructions provided in this website after installation is complete: https://cran.r-project.org/bin/windows/Rtools/.
 
+For mac users, if there is any problem with installation problem, please try download and install clang-8.0.0.pkg from the following URL: https://cloud.r-project.org/bin/macosx/tools/clang-8.0.0.pkg
+
+
 Users shall also install the following R packages before installing TreeCorTreat:
 
 * [Seurat v3](https://satijalab.org/seurat/index.html)
