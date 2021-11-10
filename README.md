@@ -19,7 +19,7 @@ The modular structure provides users with the flexibility to skip certain analys
 
 TreeCorTreat software can be installed via Github. Users should have R installed on their computer before installing TreeCorTreat. R version needs to be at least 3.6.1 or higher. R can be downloaded here: http://www.r-project.org/.
 
-For Windows users, Rtools is also required to be installed. Rtools can be downloaded here: https://cloud.r-project.org/bin/windows/Rtools/. Please find a compatible Rtools version and install with default options. For Rtools4, please follow the instructions provided in this website after installation is complete: https://cran.r-project.org/bin/windows/Rtools/.
+For Windows users, Rtools is also required to be installed. Rtools can be downloaded here: https://cran.r-project.org/bin/windows/Rtools/history.html. Please find a compatible Rtools version and install with default options. For Rtools4, please follow the instructions provided in this website after installation is complete: https://cran.r-project.org/bin/windows/Rtools/.
 
 Users shall also install the following R packages before installing TreeCorTreat:
 
