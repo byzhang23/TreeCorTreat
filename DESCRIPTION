@@ -10,7 +10,7 @@ Depends: R (>= 3.6.1)
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr
 Encoding: UTF-8
-License: GPL-2
+License: GPL-3
 LazyData: true
 Imports: 
     Seurat,
