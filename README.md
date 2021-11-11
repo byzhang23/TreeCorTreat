@@ -26,13 +26,20 @@ For mac users, if there is any problem with installation problem, please try dow
 
 Users shall also install the following R packages before installing TreeCorTreat:
 
-* [Seurat v3](https://satijalab.org/seurat/index.html)
+* [Seurat](https://satijalab.org/seurat/index.html)
 * [harmony](https://github.com/immunogenomics/harmony)
 * [limma](https://bioconductor.org/packages/release/bioc/html/limma.html)
 
 
-**TreeCorTreat package is developed based on Seurat v3 (e.g. v3.2.2)**, because there are some reported issues remained to be resolved in the latest Seurat v4 release. In order to implement TreeCorTreat successfully, please make sure to install Seurat v3 release with the following command:
+TreeCorTreat package is developed based on Seurat v3 (e.g. v3.2.2), but it supports both Seurat v3 and Seurat v4 releases. In order to implement TreeCorTreat successfully, please make sure to install Seurat depending on which R version you are using:
 
+* R version 4.0 or greater is required to install Seurat v4: 
+```{r}
+install.packages('Seurat')
+library(Seurat)
+```
+
+* If you have R version 3.x, please install Seurat v3:
 ```{r}
 install.packages('remotes')
 remotes::install_version("Seurat", version = "3.2.2") 
