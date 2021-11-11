@@ -83,7 +83,7 @@ treecor_harmony <- function(count, sample_meta, output_dir, num_PCs = 20, num_ha
 
     u <- RunHarmony(u, group.by.vars = vars_to_regress)
     u <- RunUMAP(u, reduction = "harmony", dims = 1:num_harmony)
-    u <- FindNeighbors(u,reduction = "harmony", dims = 1:num_harmony)
+    u <- FindNeighbors(u,reduction = "harmony", dims = 1:num_harmony, nn.method = "rann") # consistent with Seurat v3
     u <- FindClusters(u,resolution = resolution)
 
     # Make cluster id start from 1 ###
