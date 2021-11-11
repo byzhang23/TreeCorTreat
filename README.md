@@ -28,6 +28,7 @@ Users shall also install the following R packages before installing TreeCorTreat
 
 * [Seurat v3](https://satijalab.org/seurat/index.html)
 * [harmony](https://github.com/immunogenomics/harmony)
+* [limma](https://bioconductor.org/packages/release/bioc/html/limma.html)
 
 
 **TreeCorTreat package is developed based on Seurat v3 (e.g. v3.2.2)**, because there are some reported issues remained to be resolved in the latest Seurat v4 release. In order to implement TreeCorTreat successfully, please make sure to install Seurat v3 release with the following command:
@@ -40,6 +41,13 @@ remotes::install_version("Seurat", version = "3.2.2")
 To install harmony from CRAN:
 ```{r}
 install.packages("harmony")
+```
+
+To install limma from Bioconductor:
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("limma")
 ```
 
 To install the latest version of TreeCorTreat package via Github, run following commands in R:
