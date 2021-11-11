@@ -34,7 +34,7 @@ Users shall also install the following R packages before installing TreeCorTreat
 
 ```{r}
 install.packages('remotes')
-remotes::install_version("Seurat", version = "3.X.X") # version = '3.2.2'
+remotes::install_version("Seurat", version = "3.2.2") 
 ```
 
 To install harmony from CRAN:
