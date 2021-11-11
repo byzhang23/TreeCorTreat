@@ -110,7 +110,14 @@ treecor_harmony <- function(count, sample_meta, output_dir, num_PCs = 20, num_ha
     }
     markers <- FindAllMarkers(u)
     write.csv(markers,paste0(output_dir,'markers.csv'),row.names = F)
-    top10 <- markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+    # Depend on different Seurat version
+    seurat_version <- sub('\\..*','',packageVersion('Seurat'))
+    if(seurat_version != '4'){
+        top10 <- markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+    }else{
+        top10 <- markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC)
+    }
+    
     write.csv(top10,paste0(output_dir,'markers_top10.csv'),row.names = F)
 
     return(u)
