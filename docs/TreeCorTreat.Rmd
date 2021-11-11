@@ -70,7 +70,8 @@ Specifically, for library size normalization, gene counts for a given cell are d
 ```{r, eval=F}
 # integration
 set.seed(12345)
-integration <- treecor_harmony(count = raw_data[['count']], sample_meta = raw_data[['sample_meta']], output_dir = getwd())
+output_dir <- paste0(getwd(),'/')
+integration <- treecor_harmony(count = raw_data[['count']], sample_meta = raw_data[['sample_meta']], output_dir = output_dir)
 ```
 
 This step is the most time-consuming and RAM intensive module in our evaluation. It may take up to days to run using a large dataset (>$10^5$ cells). Instead of using this default integration pipeline, users can also use their own integration results in a Seurat object or provide cell cluster labels in an additional **'celltype'** column in the cell-level metadata and skip the integration step. 
@@ -79,7 +80,7 @@ The integrated Seurat object will be stored in local directory and filtered gene
 
 ```{r, eval = F}
 # list integration result and data extracted from Seurat object
-integrated_data <- access_data_seurat(seurat_obj = integration,output_dir = getwd())
+integrated_data <- access_data_seurat(seurat_obj = integration,output_dir = output_dir)
 ```
 
 In our example, no cell has been filtered out and we have stored updated cell-level metadata (with additional columns including 'celltype' and UMAP coordinates) as **integrated_cellmeta**.
