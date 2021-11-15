@@ -68,7 +68,7 @@ devtools::install_github("byzhang23/TreeCorTreat")
 For the user manual of TreeCorTreat, please refer to:
 https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html 
 
-If you are not familiar with R programming and want to explore how to load in datasets from csv/txt files, please check here: https://byzhang23.github.io/TreeCorTreat/DataPreparation.html
+If you are not familiar with R programming and want to explore how to load in datasets from csv/txt files, please refer to: https://byzhang23.github.io/TreeCorTreat/DataPreparation.html
 
 If you are interested in applying the TreeCorTreat plot in other (non-genomics) fields/data types, please refer to: 
 https://byzhang23.github.io/TreeCorTreat/GeneralizedTreeCorTreatPlot.html 
