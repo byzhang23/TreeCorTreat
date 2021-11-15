@@ -201,11 +201,15 @@ function toggle_visibility(id1) {
 <div id="introduction" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
 <p>In this tutorial, we are going to introduce the input data structure of <strong>TreeCorTreat</strong> and demonstrate some basic R functions to import gene expression matrix, cell-level and sample-level metadata from csv files. If you are familiar with single-cell RNA-seq data and R programming, you can skip this tutorial and check the step-by-step user manual <a href="https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html">here</a>.</p>
-<p>Please note that more advanced topics, such as preprocessing pipeline and how to load in data from 10X, will not be covered in this tutorial. Here are some useful links:</p>
+<p>Here are some general suggestions for data preparation from scratch:</p>
 <ul>
-<li>Processing raw scRNA-seq data: <a href="https://scrnaseq-course.cog.sanger.ac.uk/website/processing-raw-scrna-sseq-data.html" class="uri">https://scrnaseq-course.cog.sanger.ac.uk/website/processing-raw-scrna-sseq-data.html</a></li>
-<li>Seurat - Load in data from 10X: <a href="https://satijalab.org/seurat/reference/read10x" class="uri">https://satijalab.org/seurat/reference/read10x</a></li>
+<li><p>Collect or download high throughput sequencing data</p></li>
+<li><p>Depending on which protocol you use, preprocess the data accordingly. For example, <a href="https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger">Cell Ranger</a> is a standard pipeline that process 10x Chromium single-cell data to align reads, generate feature-barcode matrices, etc.</p></li>
+<li><p>Prepare a sample-level metadata spreadsheet with <code>sample</code> (e.g. a unique sample ID), phenotype of interest and other sample-level covariates.</p></li>
+<li><p>Load in processed data into R. For example, <a href="https://satijalab.org/seurat/articles/pbmc3k_tutorial.html">Seurat</a> provide a variety of functions to load in data from <a href="https://satijalab.org/seurat/reference/read10x">10x</a> or <a href="https://satijalab.org/seurat/reference/readmtx">remote/local mtx files</a>.</p></li>
+<li><p>Organize the cell-level metadata and gene expression matrix. Gene expression data can be stored in a (sparse) matrix. Cell-level metadata is a data frame and it must contain <code>barcode</code> and <code>sample</code> two columns (or <code>celltype</code> if you have already run data integration).</p></li>
 </ul>
+<p>Please note that more advanced topics, such as details of preprocessing steps, will not be covered in this tutorial.</p>
 </div>
 <div id="input-data" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Input data</h1>

@@ -38,10 +38,19 @@ vignette: >
 
 In this tutorial, we are going to introduce the input data structure of **TreeCorTreat** and demonstrate some basic R functions to import gene expression matrix, cell-level and sample-level metadata from csv files. If you are familiar with single-cell RNA-seq data and R programming, you can skip this tutorial and check the step-by-step user manual [here](https://byzhang23.github.io/TreeCorTreat/TreeCorTreat.html).
 
-Please note that more advanced topics, such as preprocessing pipeline and how to load in data from 10X, will not be covered in this tutorial. Here are some useful links:
+Here are some general suggestions for data preparation from scratch:
 
-* Processing raw scRNA-seq data: https://scrnaseq-course.cog.sanger.ac.uk/website/processing-raw-scrna-sseq-data.html
-* Seurat - Load in data from 10X: https://satijalab.org/seurat/reference/read10x  
+* Collect or download high throughput sequencing data
+
+* Depending on which protocol you use, preprocess the data accordingly. For example, [Cell Ranger](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger) is a standard pipeline that process 10x Chromium single-cell data to align reads, generate feature-barcode matrices, etc. 
+
+* Prepare a sample-level metadata spreadsheet with `sample` (e.g. a unique sample ID), phenotype of interest and other sample-level covariates. 
+
+* Load in processed data into R. For example, [Seurat](https://satijalab.org/seurat/articles/pbmc3k_tutorial.html) provide a variety of functions to load in data from [10x](https://satijalab.org/seurat/reference/read10x) or [remote/local mtx files](https://satijalab.org/seurat/reference/readmtx). 
+
+* Organize the cell-level metadata and gene expression matrix. Gene expression data can be stored in a (sparse) matrix. Cell-level metadata is a data frame and it must contain `barcode` and `sample` two columns (or `celltype` if you have already run data integration).
+
+Please note that more advanced topics, such as details of preprocessing steps, will not be covered in this tutorial.   
 
 # Input data
 
