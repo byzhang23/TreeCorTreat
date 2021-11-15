@@ -4,9 +4,19 @@ author:
   - name: Boyang Zhang
     affiliation: 
       - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+  - name: Zeyu Chen
+    affiliation: 
+      - &id2 "Department of Systems Pharmacology and Translational Therapeutics, Perelman School of Medicine, University of Pennsylvania"
+      - &id3 " Institute for Immunology, Perelman School of Medicine, University of Pennsylvania"
+      - &id4 "Parker Institute for Cancer Immunotherapy at University of Pennsylvania"
   - name: Zhicheng Ji
     affiliation: 
-      - &id2 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+      - &id5 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+  - name: E. John Wherry
+    affiliation: 
+      - &id2 "Department of Systems Pharmacology and Translational Therapeutics, Perelman School of Medicine, University of Pennsylvania"
+      - &id3 " Institute for Immunology, Perelman School of Medicine, University of Pennsylvania"
+      - &id4 "Parker Institute for Cancer Immunotherapy at University of Pennsylvania"
   - name: Hongkai Ji
     affiliation: 
       - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
