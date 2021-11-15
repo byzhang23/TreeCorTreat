@@ -4,9 +4,19 @@ author:
   - name: Boyang Zhang
     affiliation: 
       - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
+  - name: Zeyu Chen
+    affiliation: 
+      - &id2 "Department of Systems Pharmacology and Translational Therapeutics, Perelman School of Medicine, University of Pennsylvania"
+      - &id3 " Institute for Immunology, Perelman School of Medicine, University of Pennsylvania"
+      - &id4 "Parker Institute for Cancer Immunotherapy at University of Pennsylvania"
   - name: Zhicheng Ji
     affiliation: 
-      - &id2 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+      - &id5 "Department of Biostatistics and Bioinformatics, Duke University School of Medicine"
+  - name: E. John Wherry
+    affiliation: 
+      - &id2 "Department of Systems Pharmacology and Translational Therapeutics, Perelman School of Medicine, University of Pennsylvania"
+      - &id3 " Institute for Immunology, Perelman School of Medicine, University of Pennsylvania"
+      - &id4 "Parker Institute for Cancer Immunotherapy at University of Pennsylvania"
   - name: Hongkai Ji
     affiliation: 
       - &id1 "Deparment of Biostatistics, Bloomberg School of Public Health, Johns Hopkins University"
@@ -38,14 +48,14 @@ TreeCorTreat takes a gene expression matrix (raw count), cell-level metadata and
 
 The modular structure provides users with the flexibility to skip certain analysis steps and replace them by users’ own data or analysis functions. 
 
-For more details, please check our paper descrbing the **TreeCorTreat** package:
-- Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. [bioRxiv link]
+For more details, please check our paper describing the **TreeCorTreat** package:
+- Tree-based Correlation Screen and Visualization for Exploring Phenotype-Cell Type Association in Multiple Sample Single-Cell RNA-Sequencing Experiments. bioRxiv 2021.10.27.466024; doi: https://doi.org/10.1101/2021.10.27.466024
 
 # Input data and data preparation
 
 The input for TreeCorTreat consists of three components: a gene expression matrix E (G$\times$C, with rows representing G genes and columns representing C cells), cell-level metadata M (C$\times$K, where K $\geq$ 2) and sample-level metadata L (S$\times$J, where J $\geq$ 2). To avoid redundancy and save storage space, we split metadata into cell-level and sample-level metadata. Cell-level metadata primarily annotates cell-level information and must contain at least 2 columns for each cell: cell barcode and corresponding sample identifier (ID). An optional third column can be added to provide cell-type annotation. Cell barcode is used to couple cell-level metadata M and gene expression matrix E. Sample-level metadata documents a sample’s phenotype(s) of interests (e.g. clinical outcome) and other related covariates (e.g. age and sex). The first column contains unique sample IDs, and the remaining columns contain phenotypes and covariates. The cell-level metadata and sample-level metadata can be linked via unique sample IDs. 
 
-Here, we include 8 single-cell RNA-seq PBMC samples downloaded from **ArrayExpress: E-MTAB-9357** as an example to illustrate TreeCorTreat pipeline.
+Here, we include 8 single-cell RNA-seq PBMC samples downloaded from ArrayExpress: E-MTAB-9357 as an example to illustrate TreeCorTreat pipeline. If you are interested in how to prepare input data from scratch, please refer to Data Preparation tutorial [here](https://byzhang23.github.io/TreeCorTreat/DataPreparation.html).
 
 ```{r}
 # load in TreeCorTreat
@@ -68,7 +78,7 @@ Harmony algorithm is applied to integrate cells from different samples and embed
 Specifically, for library size normalization, gene counts for a given cell are divided by total counts for that cell, multiplied by a scaling factor ($10^4$) and applied a natural log transformation. Features for integrating samples are obtained by choosing highly variable genes (HVGs) based on variance-mean relationship within each individual sample (using `SelectIntegrationFeatures` function) and ranking the features based on the number of samples where they are identified as HVGs. By default, top 2000 HVGs are chosen and fed into downstream PCA procedure. Harmony is carried out based on the top 20 PCs and the corrected harmony embedding is obtained. Top 20 harmony coordinates are then used for downstream louvain clustering and UMAP analyses (using `FindClusters` and `RunUMAP` functions in Seurat). 
 
 ```{r, eval=F}
-# integration
+# data integration
 set.seed(12345)
 output_dir <- paste0(getwd(),'/')
 integration <- treecor_harmony(count = raw_data[['count']], sample_meta = raw_data[['sample_meta']], output_dir = output_dir)
@@ -76,14 +86,14 @@ integration <- treecor_harmony(count = raw_data[['count']], sample_meta = raw_da
 
 This step is the most time-consuming and RAM intensive module in our evaluation. It may take up to days to run using a large dataset (>$10^5$ cells). Instead of using this default integration pipeline, users can also use their own integration results in a Seurat object or provide cell cluster labels in an additional **'celltype'** column in the cell-level metadata and skip the integration step. 
 
-The integrated Seurat object will be stored in local directory and filtered gene expression matrix or cell-level metadata can be extracted by `access_data_seurat`, which will be used for downstream analyses.
+The integrated Seurat object will be stored in a specified output directory and filtered gene expression matrix or cell-level metadata can be extracted by `access_data_seurat` command. The filtered gene expression matrix and cell-level metadata will be used for downstream analysis.
 
 ```{r, eval = F}
 # list integration result and data extracted from Seurat object
 integrated_data <- access_data_seurat(seurat_obj = integration,output_dir = output_dir)
 ```
 
-In our example, no cell has been filtered out and we have stored updated cell-level metadata (with additional columns including 'celltype' and UMAP coordinates) as **integrated_cellmeta**.
+The `integrated_data` is a list object that contains three components: `count` (for gene expression matrix),  `cell_meta` (filtered cell-level metadata) and `phylo_tree` (hierarchical clustering of cell types). In our example, no cell has been filtered out. For demonstration purpose, we extracted updated cell-level metadata (with additional columns including 'celltype' and UMAP coordinates) using `integrated_data$cell_meta` and stored as **integrated_cellmeta** data object.
 
 ```{r, warning=F,message=F}
 data(integrated_cellmeta)
@@ -91,8 +101,11 @@ head(integrated_cellmeta)
 
 # data for downstream analysis
 sample_meta <- raw_data[['sample_meta']]
+dim(sample_meta)
 count <- raw_data[['count']]
+dim(count)
 cell_meta <- integrated_cellmeta
+dim(cell_meta)
 ```
 
 # Module 2: Define cell types at multiple resolutions
@@ -100,9 +113,11 @@ cell_meta <- integrated_cellmeta
 The previous steps defined cell clusters either by louvain clustering or based on user-provided cell-level metadata (i.e. the optional column 3 in the cell metadata). Users can add text labels to annotate the cell type of each cell cluster based on top differentially expressed genes or known cell type marker genes. Here, we overlay several gene markers (e.g. CD3D, CD19 and CD68) on UMAP to roughly annotate cell clusters.
 
 ```{r,message=F,out.width='\\textwidth', fig.height = 6, fig.align='center'}
-# cell clusters
+## plot UMAP and annotate cell type ID
+# prepare cell type ID label
 label_text <- integrated_cellmeta %>% group_by(celltype) %>% summarise(UMAP_1 = median(UMAP_1),UMAP_2 = median(UMAP_2))
 
+# plot UMAP
 ggplot(integrated_cellmeta,aes(x=UMAP_1,y=UMAP_2,color = celltype)) + 
   geom_point(size = 0.1) +
   geom_text(data = label_text,aes(x=UMAP_1,y=UMAP_2,label = celltype),color = 'black',size = 5) +
@@ -111,17 +126,21 @@ ggplot(integrated_cellmeta,aes(x=UMAP_1,y=UMAP_2,color = celltype)) +
 ```
 
 ```{r,message=F,out.width='\\textwidth', fig.height = 8, fig.align='center'}
-# gene markers
+## Overlay gene markers on top of UMAP
 genes <- c('CD3D','CD14','CD19','NCAM1','CD4','CD8A',
            'FCGR3A','CD1C','CD68','CD79A','CSF3R',
            'CD33','CCR7','CD38','CD27','KLRD1')
 
+# subset CPM normalized gene expression matrix
 rc <- Matrix::colSums(count)
 sub_count <- count[genes,] %>% as.matrix
 sub_norm <- log2(t(t(sub_count)/rc*1e6 + 1)) %>% as.matrix
 
+# prepare a long data format
 df_marker <- t(sub_norm) %>% data.frame %>% mutate(barcode = rownames(.)) %>% gather(gene,expr,-barcode) %>% inner_join(cell_meta %>% select(barcode,UMAP_1,UMAP_2))
+colnames(df_marker)
 
+# ggplot2: each gene as a panel
 ggplot(df_marker,aes(x = UMAP_1,y = UMAP_2,col = expr)) +
   geom_point(size = 0.01, shape = ".") +
   scale_colour_viridis_c(option = 'C',direction = 1) +
@@ -133,7 +152,7 @@ ggplot(df_marker,aes(x = UMAP_1,y = UMAP_2,col = expr)) +
 We roughly categorize `r length(unique(cell_meta$celltype))` cell clusters into 3 large cell-types based on gene markers: B cells (CD19), T cells (CD3D) and Monocytes (CD14). 
 
 ```{r}
-# new celltype annotation
+# new celltype annotation (must contain `old` and `new` two columns)
 new_label <- data.frame(old = sort(factor(unique(cell_meta$celltype,levels = 1:16)))) %>% 
   mutate(large_celltype = ifelse(old %in% c(1,9,11,12,13,16),'Mono',
                                  ifelse(old %in% c(2:6,8,10,14,15),'T','B')),
@@ -170,7 +189,7 @@ In the data-driven approach, the tree is generated by the hierarchical clusterin
 In the knowledge-based approach, users can specify the tree based on their prior knowledge by providing a string to describe the parent-children relationship of clusters at different granularity levels. The leaf nodes in the tree correspond to cell clusters obtained from either the louvain clustering in the integration step or the 'celltype' column from cell metadata.
 
 ```{r,warning=FALSE,message=FALSE,out.width='\\textwidth', fig.height = 4, fig.align='center'}
-# specify string
+# specify input string with special character ('@') to distinguish non-leaf node from leaves
 input_string <- '@All(@B(B_c7),@T(T_c15,T_c14,T_c10,T_c8,T_c6,T_c5,T_c4,T_c3,T_c2),@Monocyte(Mono_c16,Mono_c13,Mono_c12,Mono_c11,Mono_c9,Mono_c1))'
 
 # extract hierarchy from string
@@ -229,7 +248,7 @@ colnames(res_ctprop)
 
 Then we can use **TreeCorTreat plot** to visualize the result. Users can specify variables for different aesthetics (e.g. color, size, alpha). We will discuss TreeCorTreat plot in details later.
 ```{r,warning=FALSE,out.width='\\textwidth', fig.height = 7, fig.align='center'}
-# visualize
+# TreeCorTreat plot visualization
 treecortreatplot(hierarchy_structure,
                  annotated_df = res_ctprop,
                  response_variable = 'severity',
@@ -640,6 +659,23 @@ treecortreatplot(hierarchy_structure,
                  plot_type = 'balloon',
                  advanced_list = advanced_list)
 ```
+
+Alternatively, one can modify balloon size using the following code:
+```{r,out.width='\\textwidth', fig.height = 7, fig.align='center'}
+advanced_list <- list(size_info = data.frame(breaks = c('ns','sig'), values = c(4,8)))
+treecortreatplot(hierarchy_structure,
+                 annotated_df = res_expr,
+                 response_variable = 'severity',
+                 color_variable = 'cancor',
+                 size_variable = 'p.sign',
+                 alpha_variable = 'p.sign',
+                 font_size = 12,
+                 nonleaf_label_pos = 0.4,
+                 nonleaf_point_gap = 0.2,
+                 plot_type = 'balloon',
+                 advanced_list = advanced_list)
+```
+
 
 ### Choose a different color palette
 
