@@ -16,6 +16,7 @@ treecortreatplot(
   advanced_list = NULL,
   annotate_number = F,
   annotate_number_column = NULL,
+  annotate_number_fontsize = 5,
   annotate_number_color = "black",
   font_size = 10,
   nonleaf_label_pos = 0.6,
@@ -57,6 +58,8 @@ treecortreatplot(
 \item{annotate_number}{A TRUE or FALSE (default) indicator, specifying whether to annotate numbers in the plot.}
 
 \item{annotate_number_column}{Specify column names to annotate text}
+
+\item{annotate_number_fontsize}{Specify size of annotated text. Default is 5.}
 
 \item{annotate_number_color}{Specify color of annotated text if \code{annotate_number = T}. Default is 'black'.}
 
