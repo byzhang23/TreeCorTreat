@@ -20,6 +20,7 @@
 #'                              }
 #' @param annotate_number       A TRUE or FALSE (default) indicator, specifying whether to annotate numbers in the plot.
 #' @param annotate_number_column Specify column names to annotate text
+#' @param annotate_number_fontsize  Specify size of annotated text. Default is 5.
 #' @param annotate_number_color Specify color of annotated text if \code{annotate_number = T}. Default is 'black'.
 #' @param font_size             Font size
 #' @param nonleaf_label_pos     A number from 0 to 1, controlling the relative positions of non-leaf labels (default: 0.6). Default tree height between adjacent hierarchy levels is 1.
@@ -58,7 +59,7 @@
 #' treecortreatplot(hierarchy_list, annotated_df, response_variable = 'severity', color_variable = 'adjp.sign', size_variable = 'cancor', alpha_variable = 'adjp.sign',nonleaf_label_pos = 0.25,nonleaf_point_gap = 0.15, plot = T)
 
 
-treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, separate = T, num_cancor_components = 1,color_variable = NULL, size_variable = NULL, alpha_variable = NULL, advanced_list = NULL, annotate_number = F, annotate_number_column = NULL, annotate_number_color = 'black', font_size = 10, nonleaf_label_pos = 0.6, nonleaf_point_gap = NULL, edge_path_type = 'link', plot_type = 'balloon',line_color = 'black', line_type = 'solid',plot = T){
+treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, separate = T, num_cancor_components = 1,color_variable = NULL, size_variable = NULL, alpha_variable = NULL, advanced_list = NULL, annotate_number = F, annotate_number_column = NULL, annotate_number_fontsize = 5, annotate_number_color = 'black', font_size = 10, nonleaf_label_pos = 0.6, nonleaf_point_gap = NULL, edge_path_type = 'link', plot_type = 'balloon',line_color = 'black', line_type = 'solid',plot = T){
 
     #############################
     ## 1. Define outcome variable
@@ -291,7 +292,7 @@ treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, se
                   axis.text.y = element_text(hjust = 0))
     }else if(plot_type == 'bar'){
         # (2.2) barplot
-        bar_dat <- organize_leaf(leaf_node,ifelse(sum(grepl('\\.cancor',colnames(leaf_node)))>0,'cancor','num_deg'),'num')
+        bar_dat <- organize_leaf(leaf_node,size_variable,'num')
         leaf_base <- ggplot(data = suppressMessages(inner_join(combine_leaf,bar_dat)),
                             aes_string(x = 'label', y = 'num',
                                        fill = ifelse(!is.null(color_variable),'color','NULL'),
@@ -344,13 +345,13 @@ treecortreatplot <- function(hierarchy_list, annotated_df, response_variable, se
         }
 
         nonleaf_base <- nonleaf_base +
-            geom_text(data = combine_nonleaf,aes(x = x,y = y,label = text),size = 5, color = annotate_number_color)
+            geom_text(data = combine_nonleaf,aes(x = x,y = y,label = text),size = annotate_number_fontsize, color = annotate_number_color)
         if(plot_type != 'bar'){
             leaf_base <- leaf_base +
-                geom_text(data = combine_leaf,aes(x = group, y = label,label = text),size = 5, color = annotate_number_color)
+                geom_text(data = combine_leaf,aes(x = group, y = label,label = text),size = annotate_number_fontsize, color = annotate_number_color)
         }else{
             leaf_base <- leaf_base +
-                geom_text(data = suppressMessages(inner_join(combine_leaf,bar_dat)),aes(x = label, y = num,label = text),size = 5,hjust = 0, color = annotate_number_color)
+                geom_text(data = suppressMessages(inner_join(combine_leaf,bar_dat)),aes(x = label, y = num,label = text),size = annotate_number_fontsize,hjust = 0, color = annotate_number_color)
         }
     }
 
