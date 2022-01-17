@@ -161,7 +161,11 @@ treecor_deg <- function(expr,hierarchy_list, cell_meta, sample_meta, response_va
                         diff <- topTable(eb,coef = coef,n=nrow(pb),sort.by = "P", p.value = fdr_cutoff)
                         if(nrow(diff)>0){
                             diff <- diff[,c('logFC','t','P.Value','adj.P.Val')]
-                            colnames(diff) <- paste0(colnames(design)[2],'.',c('logFC','t','p','fdr'))
+                            if(is.numeric(coef)){
+                                colnames(diff) <- paste0(colnames(design)[coef],'.',c('logFC','t','p','fdr'))
+                            }else{
+                                colnames(diff) <- paste0(coef,'.',c('logFC','t','p','fdr'))
+                            }
                         }else{
                             diff <- NULL
                         }
