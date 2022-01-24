@@ -4,6 +4,7 @@
 #' @param count             A raw count gene expression matrix with genes on rows and cells on columns. Note that cell barcode shall use ':' to separate sample name and barcode (i.e. "sample:barcode")
 #' @param sample_meta       Sample metadata. Must contain a column named as 'sample'.
 #' @param output_dir        Output directory
+#' @param cell_meta         A data frame that contains both 'barcode' (cell barcode) and 'sample' columns (its corresponding sample). By default, the sample information is contained in cell barcode with "sample:barcode" format. If your data is not in this format, you should specify this parameter.
 #' @param num_PCs           Number of PCs used in integration (by default: 20)
 #' @param num_harmony       Number of harmony embedding used in integration (by default: 20)
 #' @param num_features      Number of features used in integration (by default: 2000)
@@ -28,7 +29,7 @@
 #' # increase clustering resolution (with more refined cell clusters)
 #' treecor_harmony(count, sample_meta, output_dir,resolution = 0.8)
 
-treecor_harmony <- function(count, sample_meta, output_dir, num_PCs = 20, num_harmony = 20,num_features = 2000, min_cells = 0, min_features = 0, pct_mito_cutoff = 20, exclude_genes = NULL, vars_to_regress = c('sample'), resolution = 0.5,verbose = T){
+treecor_harmony <- function(count, sample_meta, output_dir, cell_meta = NULL, num_PCs = 20, num_harmony = 20,num_features = 2000, min_cells = 0, min_features = 0, pct_mito_cutoff = 20, exclude_genes = NULL, vars_to_regress = c('sample'), resolution = 0.5,verbose = T){
 
     if(!dir.exists(output_dir)) dir.create(output_dir)
     set.seed(12345)
@@ -56,7 +57,13 @@ treecor_harmony <- function(count, sample_meta, output_dir, num_PCs = 20, num_ha
     if(verbose){
         message('Dimension of processed data after filtering:\n', nrow(u),' ', ncol(u))
     }
-    u@meta.data$sample <- sub(paste0(':.*'),'',colnames(u)) # default format
+    if(is.null(cell_meta)){
+        u@meta.data$sample <- sub(paste0(':.*'),'',colnames(u)) # default format
+    }else{
+        input.df <- suppressMessages(inner_join(data.frame(barcoderownames(u[[]])),
+                                                cell_meta))
+        u@meta.data$sample <- input.df$sample
+    }
 
     # add Meta data
     cell_meta <- suppressMessages(u[[]] %>% select(sample) %>% left_join(sample_meta) %>% select(-sample))

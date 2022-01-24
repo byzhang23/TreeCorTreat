@@ -8,6 +8,7 @@ treecor_harmony(
   count,
   sample_meta,
   output_dir,
+  cell_meta = NULL,
   num_PCs = 20,
   num_harmony = 20,
   num_features = 2000,
@@ -26,6 +27,8 @@ treecor_harmony(
 \item{sample_meta}{Sample metadata. Must contain a column named as 'sample'.}
 
 \item{output_dir}{Output directory}
+
+\item{cell_meta}{A data frame that contains both 'barcode' (cell barcode) and 'sample' columns (its corresponding sample). By default, the sample information is contained in cell barcode with "sample:barcode" format. If your data is not in this format, you should specify this parameter.}
 
 \item{num_PCs}{Number of PCs used in integration (by default: 20)}
 
