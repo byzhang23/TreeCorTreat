@@ -60,7 +60,7 @@ treecor_harmony <- function(count, sample_meta, output_dir, cell_meta = NULL, nu
     if(is.null(cell_meta)){
         u@meta.data$sample <- sub(paste0(':.*'),'',colnames(u)) # default format
     }else{
-        input.df <- suppressMessages(inner_join(data.frame(barcoderownames(u[[]])),
+        input.df <- suppressMessages(inner_join(data.frame(barcode = rownames(u[[]])),
                                                 cell_meta))
         u@meta.data$sample <- input.df$sample
     }
