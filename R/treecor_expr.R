@@ -32,6 +32,8 @@
 #' \itemize{
 #' \item canonical_corr: A data frame for summary statistic (e.g. canonical correlation or F-statistic), p-value, adjusted p-value and label information for each node.
 #' \item pc_ls: A list for top n PC matrices for each node
+#' \item pb_ls: A list for pseudobulk gene expression profile for each node
+#' \item hvg_ls: A list of highly variable genes for each node
 #' }
 #' @export
 #' @import dplyr parallel
@@ -157,6 +159,7 @@ treecor_expr <- function(expr,hierarchy_list, cell_meta, sample_meta, response_v
         },mc.cores = ncores)
         names(pb.ls) <- cal_id
     }
+    raw.pb.ls <- pb.ls # raw pseudobulk profile
 
     ## HVG selection
     if(verbose) message('Selecting highly variable genes...')
@@ -176,6 +179,16 @@ treecor_expr <- function(expr,hierarchy_list, cell_meta, sample_meta, response_v
         pb
     },mc.cores = ncores)
     names(pb.ls) <- cal_id
+    
+    hvg.ls <- lapply(pb.ls,function(dt){
+        if(is.null(dt)){
+            hvg <- NULL
+        }else{
+            hvg <- rownames(dt)
+        }
+        hvg
+    })
+    names(hvg.ls) <- cal_id
 
     ## =============================== ##
     ## 2. Calculate PC (method)
@@ -313,7 +326,10 @@ treecor_expr <- function(expr,hierarchy_list, cell_meta, sample_meta, response_v
 
     res <- suppressMessages(inner_join(cancor.dat,label_info))
     names(pc.ls) <- label_info$label[unq_id]
+    names(hvg.ls) <- names(raw.pb.ls) <- label_info$label[cal_id]
 
     res.ls <- list(canonical_corr = res,
-                   pc_ls = pc.ls)
+                   pc_ls = pc.ls,
+                   pb_ls = raw.pb.ls,
+                   hvg_ls = hvg.ls)
 }
