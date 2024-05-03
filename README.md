@@ -73,6 +73,10 @@ If you are not familiar with R programming and want to explore how to load in da
 If you are interested in applying the TreeCorTreat plot in other (non-genomics) fields/data types, please refer to: 
 https://byzhang23.github.io/TreeCorTreat/GeneralizedTreeCorTreatPlot.html 
 
+## Examples
+* Caushi, J. X., Zhang, J., Ji, Z., Vaghasia, A., **Zhang, B.**, Hsiue, E. H. C., ... & Smith, K. N. (2021). Transcriptional programs of neoantigen-specific TIL in anti-PD-1-treated lung cancers. _**Nature**_, 596(7870), 126-132. [Code](https://github.com/BKI-immuno/neoantigen-specific-T-cells-NSCLC)
+* Dykema, A. G., Zhang, J., Cheung, L. S., Connor, S., **Zhang, B.**, Zeng, Z., ... & Smith, K. N. (2023). Lung tumor–infiltrating Treg have divergent transcriptional profiles and function linked to checkpoint blockade response. _**Science immunology**_, 8(87), eadg1487.
+
 ## Citation
 Please cite the following paper:
 
